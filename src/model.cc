@@ -24,6 +24,7 @@ Model::Model(
     std::shared_ptr<Matrix> wi,
     std::shared_ptr<Matrix> wo,
     std::shared_ptr<Args> args,
+    std::shared_ptr<LossLayer> lossLayer,
     int32_t seed)
     : hidden_(args->dim),
       output_(wo->size(0)),
@@ -33,6 +34,7 @@ Model::Model(
   wi_ = wi;
   wo_ = wo;
   args_ = args;
+  lossLayer_ = lossLayer;
   osz_ = wo->size(0);
   hsz_ = args->dim;
   negpos = 0;
@@ -137,13 +139,27 @@ void Model::computeHidden(const std::vector<int32_t>& input, Vector& hidden) con
   hidden.mul(1.0 / input.size());
 }
 
+real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<real>& input_values, Vector& hidden) const {
+  assert(hidden.size() == hsz_);
+  assert(input.size() == input_values.size());
+  hidden.zero();
+  real values_sum = 0;
+  for (auto it = 0; it < input.size(); ++it){
+    hidden.addRow(*wi_, input[it],input_values[it]);
+    values_sum += input_values[it];
+  }
+  hidden.mul(1.0 / values_sum);
+  assert(input.size() == values_sum);
+  return values_sum;
+}
+
 bool Model::comparePairs(const std::pair<real, int32_t> &l,
                          const std::pair<real, int32_t> &r) {
   return l.first > r.first;
 }
 
-void Model::predict(const std::vector<int32_t>& input, int32_t k, real threshold,
-                    std::vector<std::pair<real, int32_t>>& heap,
+void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& input_values,
+                    int32_t k, real threshold, std::vector<std::pair<real, int32_t>>& heap,
                     Vector& hidden, Vector& output) const {
   if (k <= 0) {
     throw std::invalid_argument("k needs to be 1 or higher!");
@@ -152,8 +168,12 @@ void Model::predict(const std::vector<int32_t>& input, int32_t k, real threshold
     throw std::invalid_argument("Model needs to be supervised for prediction!");
   }
   heap.reserve(k + 1);
-  computeHidden(input, hidden);
-  if (args_->loss == loss_name::hs) {
+  computeHidden(input, input_values, hidden);
+
+  if (lossLayer_ != nullptr){
+    lossLayer_->findKBest(k, heap, hidden, this);
+  }
+  else if (args_->loss == loss_name::hs) {
     dfs(k, threshold, 2 * osz_ - 2, 0.0, heap, hidden);
   } else {
     findKBest(k, threshold, heap, hidden, output);
@@ -163,11 +183,12 @@ void Model::predict(const std::vector<int32_t>& input, int32_t k, real threshold
 
 void Model::predict(
   const std::vector<int32_t>& input,
+  const std::vector<real>& input_values,
   int32_t k,
   real threshold,
   std::vector<std::pair<real, int32_t>>& heap
 ) {
-  predict(input, k, threshold, heap, hidden_, output_);
+  predict(input, input_values, k, threshold, heap, hidden_, output_);
 }
 
 void Model::findKBest(
@@ -240,6 +261,38 @@ void Model::update(const std::vector<int32_t>& input, int32_t target, real lr) {
   }
   for (auto it = input.cbegin(); it != input.cend(); ++it) {
     wi_->addRow(grad_, *it, 1.0);
+  }
+}
+
+void Model::update(const std::vector<int32_t>& input, const std::vector<real>& input_values, const std::vector<int32_t>& labels, real lr) {
+
+  if (input.size() == 0) return;
+  real values_sum = computeHidden(input, input_values, hidden_);
+
+  if (lossLayer_ != nullptr && lossLayer_->isMultilabel()){
+    loss_ += lossLayer_->loss(input, labels, lr, this);
+  }
+  else{
+    std::uniform_int_distribution<> uniform(0, labels.size() - 1);
+    int32_t target = uniform(rng);
+    assert(target >= 0);
+    assert(target < osz_);
+
+    if (args_->loss == loss_name::ns) {
+      loss_ += negativeSampling(target, lr);
+    } else if (args_->loss == loss_name::hs) {
+      loss_ += hierarchicalSoftmax(target, lr);
+    } else {
+      loss_ += softmax(target, lr);
+    }
+  }
+  nexamples_ += 1;
+
+  if (args_->model == model_name::sup) {
+    grad_.mul(1.0 / values_sum);
+  }
+  for (auto it = 0; it < input.size(); ++it){
+    wi_->addRow(grad_, input[it], input_values[it]);
   }
 }
 

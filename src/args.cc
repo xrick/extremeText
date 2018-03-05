@@ -34,15 +34,32 @@ Args::Args() {
   lrUpdateRate = 100;
   t = 1e-4;
   label = "__label__";
-  verbose = 2;
+  verbose = 5;
   pretrainedVectors = "";
   saveOutput = false;
+  saveVectors = false;
+  freezeVectors = false;
+  initZeros = false;
 
+  // Quantization args
   qout = false;
   retrain = false;
   qnorm = false;
   cutoff = 0;
   dsub = 2;
+
+  // PLT args
+  arity = 2;
+  l1 = 0;
+  bias = 0;
+  treeType = tree_type_name::complete;
+  treeStructure = "";
+  randomTree = false;
+
+  // Bagging args
+  bagging = -1.0;
+  nbase = 1;
+
 }
 
 std::string Args::lossToString(loss_name ln) const {
@@ -53,6 +70,8 @@ std::string Args::lossToString(loss_name ln) const {
       return "ns";
     case loss_name::softmax:
       return "softmax";
+    case loss_name::plt:
+      return "plt";
   }
   return "Unknown loss!"; // should never happen
 }
@@ -129,6 +148,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           loss = loss_name::ns;
         } else if (args.at(ai + 1) == "softmax") {
           loss = loss_name::softmax;
+        } else if (args.at(ai + 1) == "plt") {
+          loss = loss_name::plt;
         } else {
           std::cerr << "Unknown loss: " << args.at(ai + 1) << std::endl;
           printHelp();
@@ -153,6 +174,20 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-saveOutput") {
         saveOutput = true;
         ai--;
+      } else if (args[ai] == "-saveVectors") {
+        saveVectors = true;
+        ai--;
+      } else if (args[ai] == "-freezeVectors") {
+        freezeVectors = true;
+        ai--;
+      } else if (args[ai] == "-initZeros") {
+        initZeros = true;
+        ai--;
+      } else if (args[ai] == "-bias") {
+        bias = 1;
+        ai--;
+
+      // Quantization args
       } else if (args[ai] == "-qnorm") {
         qnorm = true;
         ai--;
@@ -166,6 +201,21 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         cutoff = std::stoi(args.at(ai + 1));
       } else if (args[ai] == "-dsub") {
         dsub = std::stoi(args.at(ai + 1));
+
+      // PLT args
+      } else if (args[ai] == "-arity") {
+        arity = std::stoi(args.at(ai + 1));
+      } else if (args[ai] == "-dsub") {
+        l1 = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-treeStructure") {
+        treeStructure = std::string(args.at(ai + 1));
+
+      // Bagging args
+      } else if (args[ai] == "-bagging") {
+        bagging = std::stof(args.at(ai + 1));
+        nbase = 5;
+      } else if (args[ai] == "-nbase") {
+        nbase = std::stoi(args.at(ai + 1));
       } else {
         std::cerr << "Unknown argument: " << args[ai] << std::endl;
         printHelp();
@@ -256,6 +306,13 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(maxn), sizeof(int));
   out.write((char*) &(lrUpdateRate), sizeof(int));
   out.write((char*) &(t), sizeof(double));
+
+  // PLT args
+  out.write((char*) &(arity), sizeof(int));
+
+  // Bagging args
+  out.write((char*) &(bagging), sizeof(real));
+  out.write((char*) &(nbase), sizeof(int));
 }
 
 void Args::load(std::istream& in) {
@@ -272,6 +329,14 @@ void Args::load(std::istream& in) {
   in.read((char*) &(maxn), sizeof(int));
   in.read((char*) &(lrUpdateRate), sizeof(int));
   in.read((char*) &(t), sizeof(double));
+
+  // PLT args
+  in.read((char*) &(arity), sizeof(int));
+
+  // Bagging args
+  in.read((char*) &(bagging), sizeof(real));
+  in.read((char*) &(nbase), sizeof(int));
+
 }
 
 void Args::dump(std::ostream& out) const {

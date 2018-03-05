@@ -198,8 +198,12 @@ void Dictionary::initNgrams() {
   }
 }
 
-bool Dictionary::readWord(std::istream& in, std::string& word) const
+bool Dictionary::readWord(std::istream& in, std::string& word, real& value) const
 {
+  bool val_part = false;
+  std::string val;
+  value = 1;
+
   int c;
   std::streambuf& sb = *in.rdbuf();
   word.clear();
@@ -215,10 +219,14 @@ bool Dictionary::readWord(std::istream& in, std::string& word) const
       } else {
         if (c == '\n')
           sb.sungetc();
+        if(!val.empty())
+          value = std::stof(val);
         return true;
       }
     }
-    word.push_back(c);
+    if (val_part) val.push_back(c);
+    if (c == ':') val_part = true;
+    else word.push_back(c);
   }
   // trigger eofbit
   in.get();
@@ -227,8 +235,9 @@ bool Dictionary::readWord(std::istream& in, std::string& word) const
 
 void Dictionary::readFromFile(std::istream& in) {
   std::string word;
+  real value;
   int64_t minThreshold = 1;
-  while (readWord(in, word)) {
+  while (readWord(in, word, value)) {
     add(word);
     if (ntokens_ % 1000000 == 0 && args_->verbose > 1) {
       std::cerr << "\rRead " << ntokens_  / 1000000 << "M words" << std::flush;
@@ -304,6 +313,8 @@ void Dictionary::addWordNgrams(std::vector<int32_t>& line,
 
 void Dictionary::addSubwords(std::vector<int32_t>& line,
                              const std::string& token,
+                             std::vector<real>& line_values,
+                             const real& value,
                              int32_t wid) const {
   if (wid < 0) { // out of vocab
     if (token != EOS) {
@@ -312,9 +323,11 @@ void Dictionary::addSubwords(std::vector<int32_t>& line,
   } else {
     if (args_->maxn <= 0) { // in vocab w/o subwords
       line.push_back(wid);
+      line_values.push_back(value);
     } else { // in vocab w/ subwords
       const std::vector<int32_t>& ngrams = getSubwords(wid);
       line.insert(line.end(), ngrams.cbegin(), ngrams.cend());
+      for(auto it = 0; it < ngrams.size(); ++it) line_values.push_back(value);
     }
   }
 }
@@ -328,14 +341,17 @@ void Dictionary::reset(std::istream& in) const {
 
 int32_t Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
+                            //std::vector<real>& words_values,
                             std::minstd_rand& rng) const {
   std::uniform_real_distribution<> uniform(0, 1);
   std::string token;
+  real value;
   int32_t ntokens = 0;
 
   reset(in);
   words.clear();
-  while (readWord(in, token)) {
+  //words_values.clear();
+  while (readWord(in, token, value)) {
     int32_t h = find(token);
     int32_t wid = word2int_[h];
     if (wid < 0) continue;
@@ -343,6 +359,7 @@ int32_t Dictionary::getLine(std::istream& in,
     ntokens++;
     if (getType(wid) == entry_type::word && !discard(wid, uniform(rng))) {
       words.push_back(wid);
+      //words_values.push_back(value);
     }
     if (ntokens > MAX_LINE_SIZE || token == EOS) break;
   }
@@ -351,22 +368,25 @@ int32_t Dictionary::getLine(std::istream& in,
 
 int32_t Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
+                            std::vector<real>& words_values,
                             std::vector<int32_t>& labels) const {
   std::vector<int32_t> word_hashes;
   std::string token;
+  real value;
   int32_t ntokens = 0;
 
   reset(in);
   words.clear();
   labels.clear();
-  while (readWord(in, token)) {
+  words_values.clear();
+  while (readWord(in, token, value)) {
     uint32_t h = hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
 
     ntokens++;
     if (type == entry_type::word) {
-      addSubwords(words, token, wid);
+      addSubwords(words, token, words_values, value, wid);
       word_hashes.push_back(h);
     } else if (type == entry_type::label && wid >= 0) {
       labels.push_back(wid - nwords_);
@@ -374,6 +394,13 @@ int32_t Dictionary::getLine(std::istream& in,
     if (token == EOS) break;
   }
   addWordNgrams(words, word_hashes, args_->wordNgrams);
+
+  assert(words.size() == words_values.size());
+//  for(auto it = 0; it < words.size(); ++it){
+//    std::cout << words[it] << ":" << words_values[it] << " ";
+//  }
+//  std::cout << "\n";
+
   return ntokens;
 }
 
