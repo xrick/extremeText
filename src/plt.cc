@@ -308,7 +308,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 
             if (n->internal) {
                 for(auto child : n->children) {
-                    if (n_positive.find(child) != n_positive.end()) n_queue.push(child);
+                    if (n_positive.count(child)) n_queue.push(child);
                     else n_negative.insert(child);
                 }
             }
@@ -437,7 +437,8 @@ void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
 }
 
 int32_t PLT::getSize(){
-    return t + 1;
+    assert(t == tree.size());
+    return tree.size();
 }
 
 void PLT::printInfo(){

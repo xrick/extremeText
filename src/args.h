@@ -55,6 +55,7 @@ class Args {
     bool saveVectors;
     bool freezeVectors;
     bool initZeros;
+    bool tfidf;
     int bias = 0; // but works as bool (switch argument)
 
     // Quantization args

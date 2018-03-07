@@ -26,6 +26,10 @@ void Matrix::zero() {
   std::fill(data_.begin(), data_.end(), 0.0);
 }
 
+void Matrix::zero(int64_t i) {
+  std::fill(&data_[i * n_], &data_[i * n_ + n_], 0.0);
+}
+
 void Matrix::uniform(real a) {
   std::minstd_rand rng(1);
   std::uniform_real_distribution<> uniform(-a, a);

@@ -103,6 +103,8 @@ class Model {
     std::minstd_rand rng;
     bool quant_;
     void setQuantizePointer(std::shared_ptr<QMatrix>, std::shared_ptr<QMatrix>, bool);
+
+
 };
 
 }

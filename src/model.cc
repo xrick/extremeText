@@ -149,7 +149,7 @@ real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<r
     values_sum += input_values[it];
   }
   hidden.mul(1.0 / values_sum);
-  assert(input.size() == values_sum);
+  //assert(input.size() == values_sum);
   return values_sum;
 }
 

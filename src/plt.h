@@ -100,7 +100,7 @@ private:
     void permLabels(std::vector<int64_t>&);
 
     void buildTree(Model *model_);
-    void balancedKMeans();
+    void balancedKMeans(Matrix);
 
 public:
     PLT(std::shared_ptr<Args> args);

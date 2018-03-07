@@ -6,3 +6,4 @@ data
 fasttext
 result
 .idea
+.DS_Store

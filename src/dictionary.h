@@ -16,6 +16,7 @@
 #include <random>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "args.h"
 #include "real.h"
@@ -28,6 +29,7 @@ enum class entry_type : int8_t {word=0, label=1};
 struct entry {
   std::string word;
   int64_t count;
+  int32_t docCount;
   entry_type type;
   std::vector<int32_t> subwords;
 };
@@ -47,6 +49,10 @@ class Dictionary {
                      const std::string&,
                      std::vector<real>&,
                      const real&, int32_t) const;
+    void addSubwordsTfIdf(std::vector<int32_t>& line,
+                          const std::string&,
+                          std::vector<int32_t>&,
+                          int32_t) const;
 
     std::shared_ptr<Args> args_;
     std::vector<int32_t> word2int_;
@@ -57,6 +63,7 @@ class Dictionary {
     int32_t nwords_;
     int32_t nlabels_;
     int64_t ntokens_;
+    int32_t ndocs_;
 
     int64_t pruneidx_size_;
     std::unordered_map<int32_t, int32_t> pruneidx_;
@@ -76,6 +83,7 @@ class Dictionary {
     int32_t nwords() const;
     int32_t nlabels() const;
     int64_t ntokens() const;
+    int32_t ndocs() const;
     int32_t getId(const std::string&) const;
     int32_t getId(const std::string&, uint32_t h) const;
     entry_type getType(int32_t) const;
@@ -95,6 +103,7 @@ class Dictionary {
         std::vector<std::string>&) const;
     uint32_t hash(const std::string& str) const;
     void add(const std::string&);
+    void add(const std::string&, std::unordered_set<int32_t>&);
     bool readWord(std::istream&, std::string&, real&) const;
     void readFromFile(std::istream&);
     std::string getLabel(int32_t) const;
@@ -105,6 +114,10 @@ class Dictionary {
                     std::vector<int32_t>&,
                     std::vector<real>&,
                     std::vector<int32_t>&) const;
+    int32_t getLineTfIdf(std::istream&,
+                  std::vector<int32_t>&,
+                  std::vector<real>&,
+                  std::vector<int32_t>&) const;
     int32_t getLine(std::istream&,
                     std::vector<int32_t>&,
                     //std::vector<real>&,

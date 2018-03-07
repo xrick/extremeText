@@ -40,6 +40,7 @@ Args::Args() {
   saveVectors = false;
   freezeVectors = false;
   initZeros = false;
+  tfidf = false;
 
   // Quantization args
   qout = false;
@@ -183,6 +184,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-initZeros") {
         initZeros = true;
         ai--;
+      } else if (args[ai] == "-tfidf") {
+        tfidf = true;
+        ai--;
       } else if (args[ai] == "-bias") {
         bias = 1;
         ai--;
@@ -306,6 +310,7 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(maxn), sizeof(int));
   out.write((char*) &(lrUpdateRate), sizeof(int));
   out.write((char*) &(t), sizeof(double));
+  out.write((char*) &(tfidf), sizeof(bool));
 
   // PLT args
   out.write((char*) &(arity), sizeof(int));
@@ -329,6 +334,7 @@ void Args::load(std::istream& in) {
   in.read((char*) &(maxn), sizeof(int));
   in.read((char*) &(lrUpdateRate), sizeof(int));
   in.read((char*) &(t), sizeof(double));
+  in.read((char*) &(tfidf), sizeof(bool));
 
   // PLT args
   in.read((char*) &(arity), sizeof(int));

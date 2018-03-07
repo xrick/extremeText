@@ -419,7 +419,10 @@ void FastText::predict(
   std::vector<int32_t> words, labels;
   std::vector<real> words_values;
   predictions.clear();
-  dict_->getLine(in, words, words_values, labels);
+  if(args_->tfidf)
+    dict_->getLineTfIdf(in, words, words_values, labels);
+  else
+    dict_->getLine(in, words, words_values, labels);
   predictions.clear();
   if (words.empty()) return;
   Vector hidden(args_->dim);
@@ -607,7 +610,10 @@ void FastText::trainThread(int32_t threadId) {
     real progress = real(tokenCount_) / (args_->epoch * ntokens);
     real lr = args_->lr * (1.0 - progress);
     if (args_->model == model_name::sup) {
-      localTokenCount += dict_->getLine(ifs, line, line_values, labels);
+      if(args_->tfidf)
+        localTokenCount += dict_->getLineTfIdf(ifs, line, line_values, labels);
+      else
+        localTokenCount += dict_->getLine(ifs, line, line_values, labels);
       supervised(model, lr, line, line_values, labels);
     } else if (args_->model == model_name::cbow) {
       localTokenCount += dict_->getLine(ifs, line, model.rng);
@@ -625,6 +631,30 @@ void FastText::trainThread(int32_t threadId) {
   }
   if (threadId == 0)
     loss_ = model.getLoss();
+  ifs.close();
+}
+
+void FastText::getAvgLabelsWords(SMatrix& labelsWords) {
+  std::ifstream ifs(args_->input);
+
+  labelsWords.zero();
+
+  int64_t lineCount = 0;
+  const int64_t ndocs = dict_->ndocs();
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
+
+  while(lineCount < ndocs){
+    dict_->getLine(ifs, line, line_values, labels);
+    for(auto j = 0; j < line.size(); ++j){
+      for(auto i = 0; i < labels.size(); ++i){
+        labelsWords.add(labels[i], line[j], line_values[i]);
+      }
+    }
+
+    ++lineCount;
+  }
+
   ifs.close();
 }
 
@@ -730,7 +760,7 @@ void FastText::train(const Args args) {
     }
   }
 
-  if(lossLayer_ != nullptr);
+  if(lossLayer_ != nullptr)
     lossLayer_->printInfo();
 }
 
