@@ -23,6 +23,7 @@ void Bagging::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict
     std::cerr << "Setting up Bagging layer ...\n";
     args_ = args;
     sizeSum = 0;
+    args_->randomTree = true;
 
     assert(args_->nbase > 0);
     for(auto i = 0; i < args_->nbase; ++i){

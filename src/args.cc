@@ -40,6 +40,7 @@ Args::Args() {
   saveVectors = false;
   freezeVectors = false;
   initZeros = false;
+  wordsWeights = false;
   tfidf = false;
 
   // Quantization args
@@ -58,7 +59,7 @@ Args::Args() {
   randomTree = false;
 
   // Bagging args
-  bagging = -1.0;
+  bagging = -1;
   nbase = 1;
 
 }
@@ -184,6 +185,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-initZeros") {
         initZeros = true;
         ai--;
+      } else if (args[ai] == "-wordsWeights") {
+        wordsWeights = true;
+        ai--;
       } else if (args[ai] == "-tfidf") {
         tfidf = true;
         ai--;
@@ -217,7 +221,7 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       // Bagging args
       } else if (args[ai] == "-bagging") {
         bagging = std::stof(args.at(ai + 1));
-        nbase = 5;
+        nbase = 3;
       } else if (args[ai] == "-nbase") {
         nbase = std::stoi(args.at(ai + 1));
       } else {
@@ -296,6 +300,19 @@ void Args::printQuantizationHelp() {
     << "  -dsub               size of each sub-vector [" << dsub << "]\n";
 }
 
+void Args::printInfo(){
+  std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n";
+  if(model == model_name::sup){
+      if(tfidf) std::cerr << "  Features: tf-idf\n";
+      else if(wordsWeights) std::cerr << "  Features: word weights\n";
+      else{
+          std::cerr << "  Features: bow\n";
+      }
+  }
+  std::cerr << "  Lr: " << lr << ", dims: " << dim << ", epochs: " << epoch << ", buckets: " << bucket << "\n";
+
+}
+
 void Args::save(std::ostream& out) {
   out.write((char*) &(dim), sizeof(int));
   out.write((char*) &(ws), sizeof(int));
@@ -310,6 +327,7 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(maxn), sizeof(int));
   out.write((char*) &(lrUpdateRate), sizeof(int));
   out.write((char*) &(t), sizeof(double));
+  out.write((char*) &(wordsWeights), sizeof(bool));
   out.write((char*) &(tfidf), sizeof(bool));
 
   // PLT args
@@ -334,6 +352,7 @@ void Args::load(std::istream& in) {
   in.read((char*) &(maxn), sizeof(int));
   in.read((char*) &(lrUpdateRate), sizeof(int));
   in.read((char*) &(t), sizeof(double));
+  in.read((char*) &(wordsWeights), sizeof(bool));
   in.read((char*) &(tfidf), sizeof(bool));
 
   // PLT args

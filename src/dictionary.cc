@@ -245,7 +245,7 @@ bool Dictionary::readWord(std::istream& in, std::string& word, real& value) cons
       } else {
         if (c == '\n')
           sb.sungetc();
-        if(!val.empty())
+        if(args_->wordsWeights && !val.empty())
           value = std::stof(val);
         return true;
       }
@@ -449,6 +449,13 @@ int32_t Dictionary::getLine(std::istream& in,
 //  while(words.size() != words_values.size())
 //    words_values.push_back(1);
 
+//  real values_sum = 0;
+//  for(auto &it : words_values)
+//    values_sum += it;
+//  for(auto &it : words_values){
+//    it = it / values_sum * words.size();
+//  }
+
   assert(words.size() == words_values.size());
 
   return ntokens;
@@ -490,13 +497,24 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
     counts[words[i]].second = doc_counts[i];
   }
 
+  real values_sum = 0;
   words.clear();
   for(auto it : counts){
     words.push_back(it.first);
-    words_values.push_back( (static_cast<real>(it.second.first) / nwords) * std::log(static_cast<real>(ndocs_) / it.second.second));
+    real tfidf = (static_cast<real>(it.second.first) / nwords) * std::log(static_cast<real>(ndocs_) / it.second.second);
+    words_values.push_back(tfidf);
+    values_sum += tfidf;
   }
 
+  for(auto &it : words_values)
+    it /= values_sum / words.size();
+
   assert(words.size() == words_values.size());
+
+//  for(auto i = 0; i < words.size(); ++i){
+//    std::cout << words[i] << ":" << words_values[i] << " ";
+//  }
+//  std::cout << "\n";
 
   return ntokens;
 }
@@ -526,12 +544,14 @@ void Dictionary::save(std::ostream& out) const {
   out.write((char*) &nwords_, sizeof(int32_t));
   out.write((char*) &nlabels_, sizeof(int32_t));
   out.write((char*) &ntokens_, sizeof(int64_t));
+  out.write((char*) &ndocs_, sizeof(int32_t));
   out.write((char*) &pruneidx_size_, sizeof(int64_t));
   for (int32_t i = 0; i < size_; i++) {
     entry e = words_[i];
     out.write(e.word.data(), e.word.size() * sizeof(char));
     out.put(0);
     out.write((char*) &(e.count), sizeof(int64_t));
+    out.write((char*) &(e.docCount), sizeof(int32_t));
     out.write((char*) &(e.type), sizeof(entry_type));
   }
   for (const auto pair : pruneidx_) {
@@ -546,6 +566,7 @@ void Dictionary::load(std::istream& in) {
   in.read((char*) &nwords_, sizeof(int32_t));
   in.read((char*) &nlabels_, sizeof(int32_t));
   in.read((char*) &ntokens_, sizeof(int64_t));
+  in.read((char*) &ndocs_, sizeof(int32_t));
   in.read((char*) &pruneidx_size_, sizeof(int64_t));
   for (int32_t i = 0; i < size_; i++) {
     char c;
@@ -554,6 +575,7 @@ void Dictionary::load(std::istream& in) {
       e.word.push_back(c);
     }
     in.read((char*) &e.count, sizeof(int64_t));
+    in.read((char*) &e.docCount, sizeof(int32_t));
     in.read((char*) &e.type, sizeof(entry_type));
     words_.push_back(e);
   }

@@ -16,10 +16,6 @@
 
 namespace fasttext {
 
-constexpr int64_t SIGMOID_TABLE_SIZE = 512;
-constexpr int64_t MAX_SIGMOID = 8;
-constexpr int64_t LOG_TABLE_SIZE = 512;
-
 Model::Model(
     std::shared_ptr<Matrix> wi,
     std::shared_ptr<Matrix> wo,
@@ -145,7 +141,7 @@ real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<r
   hidden.zero();
   real values_sum = 0;
   for (auto it = 0; it < input.size(); ++it){
-    hidden.addRow(*wi_, input[it],input_values[it]);
+    hidden.addRow(*wi_, input[it], input_values[it]);
     values_sum += input_values[it];
   }
   hidden.mul(1.0 / values_sum);
@@ -273,8 +269,8 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
     loss_ += lossLayer_->loss(input, labels, lr, this);
   }
   else{
-    std::uniform_int_distribution<> uniform(0, labels.size() - 1);
-    int32_t target = uniform(rng);
+    std::uniform_int_distribution<> uniform(0, labels.size() -1);
+    int32_t target = labels[uniform(rng)];
     assert(target >= 0);
     assert(target < osz_);
 
@@ -290,9 +286,11 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
 
   if (args_->model == model_name::sup) {
     grad_.mul(1.0 / values_sum);
+    //grad_.mul(1.0 / input.size());
   }
   for (auto it = 0; it < input.size(); ++it){
     wi_->addRow(grad_, input[it], input_values[it]);
+    //wi_->addRow(grad_, input[it], 1.0);
   }
 }
 
@@ -330,6 +328,9 @@ int32_t Model::getNegative(int32_t target) {
 }
 
 void Model::buildTree(const std::vector<int64_t>& counts) {
+    if(args_->verbose > 2)
+        std::cerr << "Building HS tree ...\n";
+
   tree.resize(2 * osz_ - 1);
   for (int32_t i = 0; i < 2 * osz_ - 1; i++) {
     tree[i].parent = -1;

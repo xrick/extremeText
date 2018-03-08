@@ -257,14 +257,14 @@ real PLT::learnNode(NodePLT *n, real label, real lr, Model *model_){
     //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->n));
 
     real score = model_->wo_->dotRow(model_->hidden_, shift + n->n);
-    if(score > 8) score = 8;
-    else if(score < -8) score = -8;
+    if(score > MAX_SIGMOID) score = MAX_SIGMOID;
+    else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
     score = model_->sigmoid(score);
 
     real alpha = lr * (label - score);
     //model_->updateGrad(shift + n->n, alpha);
-    model_->grad_.addRow(*model_->wo_, shift + n->n, alpha);
-    model_->wo_->addRow(model_->hidden_, n->n, alpha);
+    model_->grad_.addRow(*model_->wo_, shift + n->n, alpha / args_->nbase);
+    model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
     //model_->wo_->addRowL1(model_->hidden_, shift + n->n, alpha, l1);
 
     if (label) {
@@ -352,23 +352,35 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
             float sumOfP = 0.0f;
             for (auto child : n->children) {
                 child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
-                sumOfP += child->p;
-            }
-            if ((sumOfP < cp) && (sumOfP > 10e-6)) {
-                for (auto child : n->children) {
-                    child->p = (child->p * cp) / sumOfP;
-                }
-            }
-            for (auto child : n->children) {
-                if (child->p > n_queue.top()->p * 0.01)
-                    n_queue.push(child);
+                n_queue.push(child);
             }
         } else {
             heap.push_back(std::make_pair(n->p, n->label));
-
             if (heap.size() >= top_k)
                 break;
         }
+
+//        if (n->internal) {
+//            float sumOfP = 0.0f;
+//            for (auto child : n->children) {
+//                child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+//                sumOfP += child->p;
+//            }
+//            if ((sumOfP < cp) && (sumOfP > 10e-6)) {
+//                for (auto child : n->children) {
+//                    child->p = (child->p * cp) / sumOfP;
+//                }
+//            }
+//            for (auto child : n->children) {
+//                if (child->p > n_queue.top()->p * 0.01)
+//                    n_queue.push(child);
+//            }
+//        } else {
+//            heap.push_back(std::make_pair(n->p, n->label));
+//
+//            if (heap.size() >= top_k)
+//                break;
+//        }
     }
 }
 
