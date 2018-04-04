@@ -23,6 +23,10 @@
 
 namespace fasttext {
 
+constexpr int64_t SIGMOID_TABLE_SIZE = 512;
+constexpr int64_t MAX_SIGMOID = 8;
+constexpr int64_t LOG_TABLE_SIZE = 512;
+
 struct Node {
   int32_t parent;
   int32_t left;

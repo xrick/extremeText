@@ -5,6 +5,8 @@
 
 #include "svector.h"
 
+#include <cmath>
+
 namespace fasttext {
 
 void SVector::zero() {

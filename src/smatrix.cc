@@ -6,6 +6,8 @@
 #include "smatrix.h"
 #include "svector.h"
 
+#include <cmath>
+
 namespace fasttext {
 
 int64_t SMatrix::size() const {

@@ -55,6 +55,7 @@ class Args {
     bool saveVectors;
     bool freezeVectors;
     bool initZeros;
+    bool wordsWeights;
     bool tfidf;
     int bias = 0; // but works as bool (switch argument)
 
@@ -66,15 +67,16 @@ class Args {
     size_t dsub;
 
     // PLT args
-    int arity = 2;
-    real l1 = 0;
+    int arity;
+    real l1;
+    bool probNorm;
     tree_type_name treeType;
     std::string treeStructure;
     bool randomTree;
 
     // Bagging args
-    real bagging = -1.0;
-    int nbase = 1;
+    real bagging;
+    int nbase;
 
     void parseArgs(const std::vector<std::string>& args);
     void printHelp();
@@ -82,6 +84,7 @@ class Args {
     void printDictionaryHelp();
     void printTrainingHelp();
     void printQuantizationHelp();
+    void printInfo();
     void save(std::ostream&);
     void load(std::istream&);
     void dump(std::ostream&) const;

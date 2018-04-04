@@ -387,12 +387,21 @@ std::tuple<int64_t, double, double> FastText::test(
     std::istream& in,
     int32_t k,
     real threshold) {
+
+  if (args_->verbose > 0) {
+    std::cerr << "Test ...\n";
+    args_->printInfo();
+  }
+
   int32_t nexamples = 0, nlabels = 0, npredictions = 0;
   double precision = 0.0;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
   while (in.peek() != EOF) {
-    dict_->getLine(in, line, line_values, labels);
+    if(args_->tfidf)
+      dict_->getLineTfIdf(in, line, line_values, labels);
+    else
+      dict_->getLine(in, line, line_values, labels);
     if (labels.size() > 0 && line.size() > 0) {
       std::vector<std::pair<real, int32_t>> modelPredictions;
       model_->predict(line, line_values, k, threshold, modelPredictions);
@@ -703,7 +712,7 @@ void FastText::train(const Args args) {
 
   if (args_->verbose > 2) {
     std::cerr << "Training ...\n";
-    std::cerr << "  Lr: " << args_->lr << ", dims: " << args_->dim << ", epochs: " << args_->epoch << ", buckets: " << args_->bucket << "\n";
+    args_->printInfo();
     std::cerr << "Reading input file ...\n";
   }
 
