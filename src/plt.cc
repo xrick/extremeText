@@ -348,39 +348,41 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
 
         float cp = n->p;
 
-        if (n->internal) {
-            float sumOfP = 0.0f;
-            for (auto child : n->children) {
-                child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
-                n_queue.push(child);
+        if(!prob_norm) {
+            if (n->internal) {
+                float sumOfP = 0.0f;
+                for (auto child : n->children) {
+                    child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+                    n_queue.push(child);
+                }
+            } else {
+                heap.push_back(std::make_pair(n->p, n->label));
+                if (heap.size() >= top_k)
+                    break;
             }
         } else {
-            heap.push_back(std::make_pair(n->p, n->label));
-            if (heap.size() >= top_k)
-                break;
-        }
+            if (n->internal) {
+                float sumOfP = 0.0f;
+                for (auto child : n->children) {
+                    child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+                    sumOfP += child->p;
+                }
+                if ((sumOfP < cp) && (sumOfP > 10e-6)) {
+                    for (auto child : n->children) {
+                        child->p = (child->p * cp) / sumOfP;
+                    }
+                }
+                for (auto child : n->children) {
+                    if (child->p > n_queue.top()->p * 0.01)
+                        n_queue.push(child);
+                }
+            } else {
+                heap.push_back(std::make_pair(n->p, n->label));
 
-//        if (n->internal) {
-//            float sumOfP = 0.0f;
-//            for (auto child : n->children) {
-//                child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
-//                sumOfP += child->p;
-//            }
-//            if ((sumOfP < cp) && (sumOfP > 10e-6)) {
-//                for (auto child : n->children) {
-//                    child->p = (child->p * cp) / sumOfP;
-//                }
-//            }
-//            for (auto child : n->children) {
-//                if (child->p > n_queue.top()->p * 0.01)
-//                    n_queue.push(child);
-//            }
-//        } else {
-//            heap.push_back(std::make_pair(n->p, n->label));
-//
-//            if (heap.size() >= top_k)
-//                break;
-//        }
+                if (heap.size() >= top_k)
+                    break;
+            }
+        }
     }
 }
 
@@ -391,13 +393,12 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     std::vector<NodePLT*> path;
     NodePLT *n = tree_leaves[label];
 
-//    if(!prob_norm){
-//        while(n != tree_root){
-//            p *= model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->n));
-//        }
-//
-//        return p;
-//    }
+    if(!prob_norm){
+        while(n != tree_root)
+            p *= model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->n));
+
+        return p;
+    }
 
     path.push_back(n);
     while (n->parent) {
@@ -436,7 +437,6 @@ void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
     if(args_->treeStructure != ""){
         args_->treeType = tree_type_name::custom;
         loadTreeStructure(args_->treeStructure);
-        //loadTreeStructureFromPaths(args_->treeStructure);
         return;
     }
 
