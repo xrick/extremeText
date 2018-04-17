@@ -110,6 +110,7 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
         freqheap.push(tup);
     }
 
+    t = tree.size();
     std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
 

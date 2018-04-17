@@ -10,7 +10,6 @@
 #include <vector>
 #include <utility>
 #include <memory>
-#include <boost/unordered_map.hpp>
 #include <queue>
 #include <cstdlib>
 #include <random>

@@ -217,6 +217,19 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         l1 = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
+      } else if (args[ai] == "-randomTree") {
+        randomTree = true;
+        ai--;
+      } else if (args[ai] == "-treeType") {
+        if (args[ai + 1] == "complete") {
+          treeType = tree_type_name::complete;
+        } else if (args[ai + 1] == "huffman") {
+          treeType = tree_type_name::huffman;
+        } else {
+          std::cout << "Unknown tree: " << args[ai] << std::endl;
+          printHelp();
+          exit(EXIT_FAILURE);
+        }
 
       // Bagging args
       } else if (args[ai] == "-bagging") {
