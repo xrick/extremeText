@@ -30,6 +30,12 @@ struct compare_node_ptr_functor{
     bool operator()(const NodePLT* l, const NodePLT* r) const { return (*l < *r); }
 };
 
+bool compare_node_freq_ptr_func(const NodeFrequency* l, const NodeFrequency* r) { return (*l < *r); }
+
+struct compare_node_freq_ptr_functor{
+    bool operator()(const NodeFrequency* l, const NodeFrequency* r) const { return (*l < *r); }
+};
+
 
 PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
     power_t = 0.5;
@@ -37,7 +43,6 @@ PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
     separate_lr = false;
     prob_norm = true;
     neg_sample = 0;
-    sh_loos = false;
     multilabel = true;
 
     n_in_vis_count = 0;
@@ -53,52 +58,40 @@ PLT::~PLT() {
 }
 
 void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
-    std::cout << "Building PLT with Huffman tree ...\n";
+    std::cout << "  Building PLT with Huffman tree ...\n";
 
     k = freq.size();
     t = 2 * k - 1; // size of the tree
 
-    ti = k - 1;
-    std::priority_queue<FreqTuple*, std::vector<FreqTuple*>, DereferenceCompareNode> freqheap;
-    for(int i=0; i<k; i++) {
-        NodePLT *n = new NodePLT();
-        n->n = i;
-        n->t = 0;
-        n->internal = false;
-        n->label=i;
-        tree_leaves.insert(std::make_pair(n->label, n));
-        tree.push_back(n);
-
-        FreqTuple* f = new FreqTuple(freq[i], n);
+    std::priority_queue<NodeFrequency*, std::vector<NodeFrequency*>, compare_node_freq_ptr_functor> freqheap;
+    for(int i = 0; i < k; ++i) {
+        NodePLT *n = createNode(nullptr, i);
+        NodeFrequency* f = new NodeFrequency();
+        *f = {n, freq[i]};
         freqheap.push(f);
 
         //std::cout << "Leaf: " << n->label << ", Node: " << n->n << ", Freq: " << freq[i] << "\n";
     }
-    int i = 0;
-    while (1) {
-        std::vector<FreqTuple*> toMerge;
-        for(int a = 0; a < args_->arity; ++a){
-            FreqTuple* tmp = freqheap.top();
+
+    while (true) {
+        std::vector<NodeFrequency *> toMerge;
+        for (int a = 0; a < args_->arity; ++a) {
+            NodeFrequency *tmp = freqheap.top();
             freqheap.pop();
             toMerge.push_back(tmp);
 
             if (freqheap.empty()) break;
         }
 
-        NodePLT* parent = new NodePLT();
-        parent->n = k + i;
-        ++i;
-        parent->t = 0;
-        parent->internal = true;
+        NodePLT *parent = createNode();
 
         int64_t aggregatedFrequency = 0;
-        for( FreqTuple* e : toMerge){
+        for (NodeFrequency *e : toMerge) {
             e->node->parent = parent;
             parent->children.push_back(e->node);
-            aggregatedFrequency += e->getFrequency();
+            aggregatedFrequency += e->frequency;
+            delete e;
         }
-
-        tree.push_back(parent);
 
         if (freqheap.empty()) {
             tree_root = parent;
@@ -106,51 +99,51 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
             break;
         }
 
-        FreqTuple* tup = new FreqTuple(aggregatedFrequency,parent);
+        NodeFrequency *tup = new NodeFrequency();
+        *tup = {parent, aggregatedFrequency};
         freqheap.push(tup);
     }
 
     t = tree.size();
-    std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+    std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
 
-void PLT::loadTreeStructureFromPaths(std::string filename){
-    std::cout << "Loading PLT structure from file ...\n";
-    std::ifstream treefile(filename);
+void PLT::buildCompletePLTree(int32_t k_) {
+  std::cout << "  Building PLT with complete tree ...\n";
 
-    treefile >> k >> t;
+  // Build complete tree
 
-    for (auto i = 0; i < t; ++i) {
-        NodePLT *n = new NodePLT();
-        n->n = i;
-        n->t = 0;
-        n->internal = true;
-        n->parent = nullptr;
-        tree.push_back(n);
+  std::default_random_engine rng(time(0) * shift);
+  k = k_;
+  t = static_cast<int>(ceil(static_cast<double>(args_->arity * k - 1) / (args_->arity - 1)));
+  uint32_t ti = t - k;
+
+  std::vector<int32_t> labels_order;
+  if (args_->randomTree){
+    for (auto i = 0; i < k; ++i)
+      labels_order.push_back(i);
+    std::shuffle(labels_order.begin(), labels_order.end(), rng);
+  }
+
+  for(size_t i = 0; i < t; ++i){
+    NodePLT *n = createNode();
+
+    if(i >= ti){
+      if(args_->randomTree) n->label = labels_order[i - ti];
+      else n->label = i - ti;
+      tree_leaves.insert(std::make_pair(n->label, n));
     }
 
-    for (auto i = 0; i < k + 1; ++i) {
-        int label, path_size, node;
-        treefile >> label >> path_size;
-
-        NodePLT *n = tree[label];
-        n->label = label;
-        n->internal = false;
-        tree_leaves.insert(std::make_pair(n->label, n));
-
-        for(auto j = 0; j < path_size; ++j) {
-            treefile >> node;
-            if(!n->parent) {
-                n->parent = tree[k + node];
-                n->parent->children.push_back(n);
-                if(j == path_size - 1) tree_root = n->parent;
-                n = n->parent;
-            }
-        }
+    if(i > 0){
+      n->parent = tree[static_cast<int>(floor(static_cast<float>(n->n - 1) / args_->arity))];
+      n->parent->children.push_back(n);
     }
-    treefile.close();
+  }
 
-    std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+  tree_root = tree[0];
+  tree_root->parent = nullptr;
+
+  std::cout << "   Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
 
 void PLT::loadTreeStructure(std::string filename){
@@ -159,24 +152,19 @@ void PLT::loadTreeStructure(std::string filename){
 
     treefile >> k >> t;
 
-    for (auto i = 0; i < t; ++i) {
-        NodePLT *n = new NodePLT();
-        n->n = i;
-        n->t = 0;
-        n->internal = true;
-        n->parent = nullptr;
-        tree.push_back(n);
-    }
+    for (auto i = 0; i < t; ++i)
+        NodePLT *n = createNode();
     tree_root = tree[0];
 
     for (auto i = 0; i < t - 1; ++i) {
         int parent, child, label;
         treefile >> parent >> child >> label;
 
-//        if(parent == -1){
-//            tree_root = tree[child];
-//            continue;
-//        }
+        if(parent == -1){
+            tree_root = tree[child];
+            --i;
+            continue;
+        }
 
         NodePLT *parentN = tree[parent];
         NodePLT *childN = tree[child];
@@ -184,7 +172,6 @@ void PLT::loadTreeStructure(std::string filename){
         childN->parent = parentN;
 
         if(label >= 0){
-            childN->internal = false;
             childN->label = label;
             tree_leaves.insert(std::make_pair(childN->label, childN));
         }
@@ -196,64 +183,10 @@ void PLT::loadTreeStructure(std::string filename){
     assert(tree_leaves.size() == k);
 }
 
-void PLT::buildCompletePLTree(int32_t k_) {
-    std::cout << "Building PLT with complete tree ...\n";
-
-    std::default_random_engine rng(time(0) * shift);
-
-    k = k_;
-
-    // Build complete tree
-    if (args_->arity > 2) {
-        double a = pow(args_->arity, floor(log(k) / log(args_->arity)));
-        double b = k - a;
-        double c = ceil(b / (args_->arity - 1.0));
-        double d = (args_->arity * a - 1.0) / (args_->arity - 1.0);
-        double e = k - (a - c);
-        t = static_cast<uint32_t>(e + d);
-    } else {
-        args_->arity = 2;
-        t = 2 * k - 1;
-    }
-
-    ti = t - k;
-
-    std::vector<int32_t> labels_order;
-    if (args_->randomTree){
-        for (auto i = 0; i < k; ++i){
-            labels_order.push_back(i);
-        }
-
-        std::random_shuffle(labels_order.begin(), labels_order.end());
-    }
-
-    for(size_t i = 0; i < t; ++i){
-        NodePLT *n = new NodePLT();
-        n->n = i;
-        n->t = 0;
-        if(i < ti) n->internal = true;
-        else{
-            n->internal = false;
-            if(args_->randomTree) n->label = labels_order[i - ti];
-            else n->label = i - ti;
-            tree_leaves.insert(std::make_pair(n->label, n));
-        }
-        if(i > 0){
-            n->parent = tree[static_cast<int>(floor(static_cast<float>(n->n - 1) / args_->arity))];
-            n->parent->children.push_back(n);
-        }
-        tree.push_back(n);
-    }
-
-    tree_root = tree[0];
-    tree_root->parent = nullptr;
-
-    std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
-}
-
 real PLT::learnNode(NodePLT *n, real label, real lr, Model *model_){
-    if(n->internal) ++n_in_vis_count;
+    if(n->label < 0) ++n_in_vis_count;
     ++n_vis_count;
+    ++n->n_updates;
 
     //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->n));
 
@@ -269,15 +202,31 @@ real PLT::learnNode(NodePLT *n, real label, real lr, Model *model_){
     //model_->wo_->addRowL1(model_->hidden_, shift + n->n, alpha, l1);
 
     if (label) {
+        ++n->n_positive_updates;
         return -log(score);
     } else {
         return -log(1.0 - score);
     }
 }
 
-void PLT::permLabels(std::vector<int64_t>& perm){
-    for( int i=0; i<perm.size(); i++ )
-        tree_leaves[i]->label = perm[i];
+real PLT::predictNode(NodePLT *n, Vector& hidden, const Model *model_){
+    if(n->n_updates == 0 || n->n_positive_updates == 0) return 0;
+    else if(n->n_positive_updates == n->n_updates) return 1;
+    else return model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->n));
+}
+
+NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
+    NodePLT *n = new NodePLT();
+    n->n = tree.size();
+    n->label = label;
+    n->parent = parent;
+    n->n_updates = 0;
+    n->n_positive_updates = 0;
+
+    tree.push_back(n);
+    if(label >= 0) tree_leaves[n->label] = n;
+    if(parent != nullptr) parent->children.push_back(n);
+    return n;
 }
 
 
@@ -307,7 +256,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
             NodePLT* n = n_queue.front(); // current node index
             n_queue.pop();
 
-            if (n->internal) {
+            if (n->label < 0) {
                 for(auto child : n->children) {
                     if (n_positive.count(child)) n_queue.push(child);
                     else n_negative.insert(child);
@@ -340,7 +289,7 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
     std::vector<NodePLT*> best_labels, found_leaves;
     std::priority_queue<NodePLT*, std::vector<NodePLT*>, compare_node_ptr_functor> n_queue;
 
-    tree_root->p = model_->sigmoid(model_->wo_->dotRow(hidden, shift + tree_root->n));
+    tree_root->p = predictNode(tree_root, hidden, model_);
     n_queue.push(tree_root);
 
     while (!n_queue.empty()) {
@@ -350,10 +299,10 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
         float cp = n->p;
 
         if(!prob_norm) {
-            if (n->internal) {
+            if (n->label < 0) {
                 float sumOfP = 0.0f;
                 for (auto child : n->children) {
-                    child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+                    child->p = cp * predictNode(child, hidden, model_);
                     n_queue.push(child);
                 }
             } else {
@@ -362,10 +311,10 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
                     break;
             }
         } else {
-            if (n->internal) {
+            if (n->label < 0) {
                 float sumOfP = 0.0f;
                 for (auto child : n->children) {
-                    child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+                    child->p = cp * predictNode(child, hidden, model_);
                     sumOfP += child->p;
                 }
                 if ((sumOfP < cp) && (sumOfP > 10e-6)) {
@@ -379,7 +328,6 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
                 }
             } else {
                 heap.push_back(std::make_pair(n->p, n->label));
-
                 if (heap.size() >= top_k)
                     break;
             }
@@ -396,7 +344,7 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
     if(!prob_norm){
         while(n != tree_root)
-            p *= model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->n));
+            p *= predictNode(n, hidden, model_);
 
         return p;
     }
@@ -410,14 +358,14 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     assert(tree_root == n);
     assert(tree_root == path.back());
 
-    tree_root->p = model_->sigmoid(model_->wo_->dotRow(hidden, shift + tree_root->n));
+    tree_root->p = predictNode(tree_root, hidden, model_);
     for(auto n = path.rbegin(); n != path.rend(); ++n){
         float cp = (*n)->p;
 
-        if ((*n)->internal) {
+        if ((*n)->label < 0) {
             float sumOfP = 0.0f;
             for (auto child : (*n)->children) {
-                child->p = cp * model_->sigmoid(model_->wo_->dotRow(hidden, shift + child->n));
+                child->p = cp * predictNode(child, hidden, model_);
                 sumOfP += child->p;
             }
             if ((sumOfP < cp) && (sumOfP > 10e-6)) {
@@ -472,7 +420,8 @@ void PLT::save(std::ostream& out){
         NodePLT *n = tree[i];
         out.write((char*) &n->n, sizeof(n->n));
         out.write((char*) &n->label, sizeof(n->label));
-        out.write((char*) &n->internal, sizeof(n->internal));
+        out.write((char*) &n->n_updates, sizeof(n->n_updates));
+        out.write((char*) &n->n_positive_updates, sizeof(n->n_positive_updates));
     }
 
     uint32_t root_n = tree_root->n;
@@ -497,14 +446,16 @@ void PLT::load(std::istream& in){
     in.read((char*) &k, sizeof(int32_t));
 
     in.read((char*) &t, sizeof(t));
+    tree.resize(t);
     for(size_t i = 0; i < t; ++i) {
         NodePLT *n = new NodePLT();
         in.read((char*) &n->n, sizeof(n->n));
         in.read((char*) &n->label, sizeof(n->label));
-        in.read((char*) &n->internal, sizeof(n->internal));
+        in.read((char*) &n->n_updates, sizeof(n->n_updates));
+        in.read((char*) &n->n_positive_updates, sizeof(n->n_positive_updates));
 
-        tree.push_back(n);
-        if (!n->internal) tree_leaves[n->label] = n;
+        tree[i] = n;
+        if (n->label >= 0) tree_leaves[n->label] = n;
     }
 
     uint32_t root_n;

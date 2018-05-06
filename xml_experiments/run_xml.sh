@@ -13,7 +13,7 @@ if [ ! -e datasets4fastText ]; then
     git clone https://github.com/mwydmuch/datasets4fastText.git
 fi
 
-if [ ! -e datasets4fastText/xml_repo/${FILES_PREFIX} ]; then
+if [ ! -e $FILES_PREFIX ]; then
     bash datasets4fastText/xml_repo/get_${DATASET_NAME}.sh
 fi
 

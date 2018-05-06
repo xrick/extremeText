@@ -284,12 +284,17 @@ void Dictionary::readFromFile(std::istream& in) {
   if (args_->verbose > 0) {
     std::cerr << "\rRead " << ntokens_  / 1000000 << "M words" << std::endl;
     std::cerr << "Number of documents: " << ndocs_ << std::endl;
-    std::cerr << "Number of words:  " << nwords_ << std::endl;
-    std::cerr << "Number of labels: " << nlabels_ << std::endl;
+    std::cerr << "Number of words:     " << nwords_ << std::endl;
+    std::cerr << "Number of labels:    " << nlabels_ << std::endl;
   }
   if (size_ == 0) {
     throw std::invalid_argument(
         "Empty vocabulary. Try a smaller -minCount value.");
+  }
+
+  if(args_->labelsOrder){
+    std::cerr << "Reordering labels ...";
+    reorderLabels();
   }
 }
 
@@ -641,6 +646,33 @@ void Dictionary::dump(std::ostream& out) const {
     }
     out << it.word << " " << it.count << " " << entryType << std::endl;
   }
+}
+
+void Dictionary::reorderLabels(){
+  int32_t maxLabel;
+
+  for(int i = nwords_; i < nwords_ + nlabels_; ++i){
+    int32_t label = std::stoi(words_[i].word.substr(args_->label.size()));
+    if(label > maxLabel) maxLabel = label;
+  }
+
+  ++maxLabel;
+  std::vector<entry> _words(maxLabel);
+  words_.resize(nwords_ + maxLabel);
+
+  for(int i = nwords_; i < nwords_ + nlabels_; ++i){
+    int label = std::stoi(words_[i].word.substr(args_->label.size()));
+    _words[label] = words_[i];
+    int32_t h = find(words_[i].word);
+    word2int_[h] = nwords_ + label;
+  }
+
+  for(int i = 0; i < maxLabel; ++i){
+    words_[nwords_ + i] = _words[i];
+  }
+
+  nlabels_ = maxLabel;
+  size_ = nwords_ + nlabels_;
 }
 
 }

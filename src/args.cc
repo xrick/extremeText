@@ -42,6 +42,7 @@ Args::Args() {
   initZeros = false;
   wordsWeights = false;
   tfidf = false;
+  labelsOrder = false;
 
   // Quantization args
   qout = false;
@@ -193,6 +194,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         ai--;
       } else if (args[ai] == "-bias") {
         bias = 1;
+        ai--;
+      } else if (args[ai] == "-labelsOrder") {
+        labelsOrder = true;
         ai--;
 
       // Quantization args

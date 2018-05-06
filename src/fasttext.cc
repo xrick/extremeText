@@ -615,6 +615,7 @@ void FastText::trainThread(int32_t threadId) {
   int64_t localTokenCount = 0;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
+
   while (tokenCount_ < args_->epoch * ntokens) {
     real progress = real(tokenCount_) / (args_->epoch * ntokens);
     real lr = args_->lr * (1.0 - progress);
@@ -640,30 +641,6 @@ void FastText::trainThread(int32_t threadId) {
   }
   if (threadId == 0)
     loss_ = model.getLoss();
-  ifs.close();
-}
-
-void FastText::getAvgLabelsWords(SMatrix& labelsWords) {
-  std::ifstream ifs(args_->input);
-
-  labelsWords.zero();
-
-  int64_t lineCount = 0;
-  const int64_t ndocs = dict_->ndocs();
-  std::vector<int32_t> line, labels;
-  std::vector<real> line_values;
-
-  while(lineCount < ndocs){
-    dict_->getLine(ifs, line, line_values, labels);
-    for(auto j = 0; j < line.size(); ++j){
-      for(auto i = 0; i < labels.size(); ++i){
-        labelsWords.add(labels[i], line[j], line_values[i]);
-      }
-    }
-
-    ++lineCount;
-  }
-
   ifs.close();
 }
 

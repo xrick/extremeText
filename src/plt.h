@@ -34,46 +34,36 @@ namespace fasttext {
 class Model;
 
 struct NodePLT{
-    uint32_t n; //id of the base predictor
-    uint32_t label;
+  uint32_t n; //id of the base predictor
+  int32_t label;
+  NodePLT* parent; // pointer to the parent node
+  std::vector<NodePLT*> children; // pointers to the children nodes
 
-    NodePLT* parent; // pointer to the parent node
-    std::vector<NodePLT*> children; // pointers to the children nodes
-    bool internal; // internal or leaf
-    float t;
-    float p; // prediction value
-    bool operator < (const NodePLT& r) const { return p < r.p; }
+  // training
+  uint32_t n_updates;
+  uint32_t n_positive_updates;
+
+  // prediction
+  float p; // probability
+
+  bool operator < (const NodePLT& r) const { return p < r.p; }
 };
 
-class FreqTuple{
-public:
-    int64_t f;
-    NodePLT* node;
-public:
-    FreqTuple(int64_t f_, NodePLT* node_){
-        f=f_; node=node_;
-    }
-    int64_t getFrequency() const { return f;}
-};
+struct NodeFrequency{
+  NodePLT* node;
+  int64_t frequency;
 
-struct DereferenceCompareNode : public std::binary_function<FreqTuple*, FreqTuple*, bool>{
-    bool operator()(const FreqTuple* lhs, const FreqTuple* rhs) const {
-        return lhs->getFrequency() > rhs->getFrequency();
-    }
+  bool operator<(const NodeFrequency& r) const { return frequency < r.frequency; }
 };
-
 
 class PLT: public LossLayer{
 private:
 
     uint32_t k; // number of labels
     uint32_t t; // number of tree nodes
-    uint32_t ti; // number of internal nodes
-    uint32_t arity;
     bool separate_lr;
     bool prob_norm;
     bool neg_sample;
-    bool sh_loos;
 
     int n_in_vis_count;
     int n_vis_count;
@@ -82,7 +72,7 @@ private:
 
     NodePLT *tree_root;
     std::vector<NodePLT*> tree; // pointers to tree nodes
-    std::unordered_map<uint32_t, NodePLT*> tree_leaves; // leaves map
+    std::unordered_map<int32_t, NodePLT*> tree_leaves; // leaves map
 
     real base_lr;
     real power_t;
@@ -92,14 +82,13 @@ private:
     Model *model_;
 
     real learnNode(NodePLT *n, real label, real lr, Model *model_);
+    real predictNode(NodePLT *n, Vector& hidden, const Model *model_);
+
     void buildCompletePLTree(int32_t);
     void buildHuffmanPLTree(const std::vector<int64_t>&);
-    void loadTreeStructureFromPaths(std::string filename);
     void loadTreeStructure(std::string filename);
-    void permLabels(std::vector<int64_t>&);
 
-    void buildTree(Model *model_);
-    void balancedKMeans(Matrix);
+    NodePLT* createNode(NodePLT *parent = nullptr, int32_t label = -1);
 
 public:
     PLT(std::shared_ptr<Args> args);

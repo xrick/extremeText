@@ -58,6 +58,7 @@ class Args {
     bool wordsWeights;
     bool tfidf;
     int bias = 0; // but works as bool (switch argument)
+    bool labelsOrder;
 
     // Quantization args
     bool qout;

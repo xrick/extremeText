@@ -328,8 +328,8 @@ int32_t Model::getNegative(int32_t target) {
 }
 
 void Model::buildTree(const std::vector<int64_t>& counts) {
-    if(args_->verbose > 2)
-        std::cerr << "Building HS tree ...\n";
+  if(args_->verbose > 2)
+      std::cerr << "  Building HS tree ...\n";
 
   tree.resize(2 * osz_ - 1);
   for (int32_t i = 0; i < 2 * osz_ - 1; i++) {

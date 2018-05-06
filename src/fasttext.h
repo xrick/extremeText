@@ -24,11 +24,9 @@
 #include "matrix.h"
 #include "model.h"
 #include "qmatrix.h"
-#include "smatrix.h"
 #include "real.h"
 #include "utils.h"
 #include "vector.h"
-#include "svector.h"
 #include "losslayer.h"
 
 namespace fasttext {
@@ -75,8 +73,6 @@ class FastText {
     vec.zero();
     addInputVector(vec, ind);
   }
-
-  void getAvgLabelsWords(SMatrix&);
 
   const Args getArgs() const;
   std::shared_ptr<const Dictionary> getDictionary() const;

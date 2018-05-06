@@ -2,6 +2,6 @@
 
 DATASET_NAME="Wiki10-31K"
 FILES_PREFIX="wiki10"
-PARAMS="-lr 0.2 -epoch 30 -arity 16 -dim 300 -random_tree -bagging 1.0 -nbase 3"
+PARAMS="-lr 0.2 -epoch 30 -arity 16 -dim 300 -randomTree -bagging 1.0 -nbase 3"
 
 bash run_xml.sh $DATASET_NAME $FILES_PREFIX "$PARAMS"
