@@ -19,8 +19,13 @@
 #include "vector.h"
 #include "qmatrix.h"
 #include "real.h"
+#include "losslayer.h"
 
 namespace fasttext {
+
+constexpr int64_t SIGMOID_TABLE_SIZE = 512;
+constexpr int64_t MAX_SIGMOID = 8;
+constexpr int64_t LOG_TABLE_SIZE = 512;
 
 struct Node {
   int32_t parent;
@@ -31,12 +36,14 @@ struct Node {
 };
 
 class Model {
-  protected:
+  public:
+  //protected:
     std::shared_ptr<Matrix> wi_;
     std::shared_ptr<Matrix> wo_;
     std::shared_ptr<QMatrix> qwi_;
     std::shared_ptr<QMatrix> qwo_;
     std::shared_ptr<Args> args_;
+    std::shared_ptr<LossLayer> lossLayer_;
     Vector hidden_;
     Vector output_;
     Vector grad_;
@@ -65,25 +72,27 @@ class Model {
 
   public:
     Model(std::shared_ptr<Matrix>, std::shared_ptr<Matrix>,
-          std::shared_ptr<Args>, int32_t);
+          std::shared_ptr<Args>, std::shared_ptr<LossLayer>, int32_t);
 
     real binaryLogistic(int32_t, bool, real);
     real negativeSampling(int32_t, real);
     real hierarchicalSoftmax(int32_t, real);
     real softmax(int32_t, real);
 
-    void predict(const std::vector<int32_t>&, int32_t, real,
-                 std::vector<std::pair<real, int32_t>>&,
+    void predict(const std::vector<int32_t>&, const std::vector<real>&,
+                 int32_t, real, std::vector<std::pair<real, int32_t>>&,
                  Vector&, Vector&) const;
-    void predict(const std::vector<int32_t>&, int32_t, real,
-                 std::vector<std::pair<real, int32_t>>&);
+    void predict(const std::vector<int32_t>&, const std::vector<real>&,
+                 int32_t, real, std::vector<std::pair<real, int32_t>>&);
     void dfs(int32_t, real, int32_t, real,
              std::vector<std::pair<real, int32_t>>&,
              Vector&) const;
     void findKBest(int32_t, real, std::vector<std::pair<real, int32_t>>&,
                    Vector&, Vector&) const;
     void update(const std::vector<int32_t>&, int32_t, real);
+    void update(const std::vector<int32_t>&, const std::vector<real>&, const std::vector<int32_t>&, real);
     void computeHidden(const std::vector<int32_t>&, Vector&) const;
+    real computeHidden(const std::vector<int32_t>&, const std::vector<real>&, Vector&) const;
     void computeOutputSoftmax(Vector&, Vector&) const;
     void computeOutputSoftmax();
 
@@ -98,6 +107,8 @@ class Model {
     std::minstd_rand rng;
     bool quant_;
     void setQuantizePointer(std::shared_ptr<QMatrix>, std::shared_ptr<QMatrix>, bool);
+
+
 };
 
 }

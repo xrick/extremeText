@@ -1,3 +1,13 @@
+# extremeText
+
+extremeText is an extension of fastText library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
+
+## Usage
+
+(soon)
+
+# fastText README.md
+
 ## Table of contents
 
 * [Introduction](#introduction)

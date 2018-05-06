@@ -84,6 +84,9 @@ void FastText::getSubwordVector(Vector& vec, const std::string& subword)
 }
 
 void FastText::saveVectors() {
+  if (args_->verbose > 2)
+    std::cerr << "Saving vectors ...\n";
+
   std::ofstream ofs(args_->output + ".vec");
   if (!ofs.is_open()) {
     throw std::invalid_argument(
@@ -100,6 +103,9 @@ void FastText::saveVectors() {
 }
 
 void FastText::saveOutput() {
+  if (args_->verbose > 2)
+    std::cerr << "Saving output ...\n";
+
   std::ofstream ofs(args_->output + ".output");
   if (!ofs.is_open()) {
     throw std::invalid_argument(
@@ -154,6 +160,9 @@ void FastText::saveModel() {
 }
 
 void FastText::saveModel(const std::string path) {
+  if (args_->verbose > 2)
+    std::cerr << "Saving model ...\n";
+
   std::ofstream ofs(path, std::ofstream::binary);
   if (!ofs.is_open()) {
     throw std::invalid_argument(path + " cannot be opened for saving!");
@@ -176,10 +185,15 @@ void FastText::saveModel(const std::string path) {
     output_->save(ofs);
   }
 
+  if(lossLayer_ != nullptr)
+    lossLayer_->save(ofs);
+
   ofs.close();
 }
 
 void FastText::loadModel(const std::string& filename) {
+  std::cerr << "Loading model ...\n";
+
   std::ifstream ifs(filename, std::ifstream::binary);
   if (!ifs.is_open()) {
     throw std::invalid_argument(filename + " cannot be opened for loading!");
@@ -227,14 +241,20 @@ void FastText::loadModel(std::istream& in) {
     output_->load(in);
   }
 
-  model_ = std::make_shared<Model>(input_, output_, args_, 0);
+  lossLayer_ = lossLayerFactory(args_);
+  if(lossLayer_ != nullptr)
+    lossLayer_->load(in);
+
+  model_ = std::make_shared<Model>(input_, output_, args_, lossLayer_, 0);
   model_->quant_ = quant_;
   model_->setQuantizePointer(qinput_, qoutput_, args_->qout);
 
-  if (args_->model == model_name::sup) {
-    model_->setTargetCounts(dict_->getCounts(entry_type::label));
-  } else {
-    model_->setTargetCounts(dict_->getCounts(entry_type::word));
+  if(lossLayer_ == nullptr){
+    if (args_->model == model_name::sup) {
+      model_->setTargetCounts(dict_->getCounts(entry_type::label));
+    } else {
+      model_->setTargetCounts(dict_->getCounts(entry_type::word));
+    }
   }
 }
 
@@ -312,7 +332,7 @@ void FastText::quantize(const Args qargs) {
   }
 
   quant_ = true;
-  model_ = std::make_shared<Model>(input_, output_, args_, 0);
+  model_ = std::make_shared<Model>(input_, output_, args_, nullptr, 0);
   model_->quant_ = quant_;
   model_->setQuantizePointer(qinput_, qoutput_, args_->qout);
   if (args_->model == model_name::sup) {
@@ -326,11 +346,10 @@ void FastText::supervised(
     Model& model,
     real lr,
     const std::vector<int32_t>& line,
+    const std::vector<real>& line_values,
     const std::vector<int32_t>& labels) {
   if (labels.size() == 0 || line.size() == 0) return;
-  std::uniform_int_distribution<> uniform(0, labels.size() - 1);
-  int32_t i = uniform(model.rng);
-  model.update(line, labels[i], lr);
+  model.update(line, line_values, labels, lr);
 }
 
 void FastText::cbow(Model& model, real lr,
@@ -368,15 +387,24 @@ std::tuple<int64_t, double, double> FastText::test(
     std::istream& in,
     int32_t k,
     real threshold) {
+
+  if (args_->verbose > 0) {
+    std::cerr << "Test ...\n";
+    args_->printInfo();
+  }
+
   int32_t nexamples = 0, nlabels = 0, npredictions = 0;
   double precision = 0.0;
   std::vector<int32_t> line, labels;
-
+  std::vector<real> line_values;
   while (in.peek() != EOF) {
-    dict_->getLine(in, line, labels);
+    if(args_->tfidf)
+      dict_->getLineTfIdf(in, line, line_values, labels);
+    else
+      dict_->getLine(in, line, line_values, labels);
     if (labels.size() > 0 && line.size() > 0) {
       std::vector<std::pair<real, int32_t>> modelPredictions;
-      model_->predict(line, k, threshold, modelPredictions);
+      model_->predict(line, line_values, k, threshold, modelPredictions);
       for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
         if (std::find(labels.begin(), labels.end(), it->second) != labels.end()) {
           precision += 1.0;
@@ -398,14 +426,18 @@ void FastText::predict(
   real threshold
 ) const {
   std::vector<int32_t> words, labels;
+  std::vector<real> words_values;
   predictions.clear();
-  dict_->getLine(in, words, labels);
+  if(args_->tfidf)
+    dict_->getLineTfIdf(in, words, words_values, labels);
+  else
+    dict_->getLine(in, words, words_values, labels);
   predictions.clear();
   if (words.empty()) return;
   Vector hidden(args_->dim);
   Vector output(dict_->nlabels());
   std::vector<std::pair<real,int32_t>> modelPredictions;
-  model_->predict(words, k, threshold, modelPredictions, hidden, output);
+  model_->predict(words, words_values, k, threshold, modelPredictions, hidden, output);
   for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
     predictions.push_back(std::make_pair(it->first, dict_->getLabel(it->second)));
   }
@@ -444,7 +476,8 @@ void FastText::getSentenceVector(
   svec.zero();
   if (args_->model == model_name::sup) {
     std::vector<int32_t> line, labels;
-    dict_->getLine(in, line, labels);
+    std::vector<real> line_values;
+    dict_->getLine(in, line, line_values, labels);
     for (int32_t i = 0; i < line.size(); i++) {
       addInputVector(svec, line[i]);
     }
@@ -569,22 +602,29 @@ void FastText::trainThread(int32_t threadId) {
   std::ifstream ifs(args_->input);
   utils::seek(ifs, threadId * utils::size(ifs) / args_->thread);
 
-  Model model(input_, output_, args_, threadId);
-  if (args_->model == model_name::sup) {
-    model.setTargetCounts(dict_->getCounts(entry_type::label));
-  } else {
-    model.setTargetCounts(dict_->getCounts(entry_type::word));
+  Model model(input_, output_, args_, lossLayer_, threadId);
+  if(lossLayer_ == nullptr){
+    if (args_->model == model_name::sup) {
+      model.setTargetCounts(dict_->getCounts(entry_type::label));
+    } else {
+      model.setTargetCounts(dict_->getCounts(entry_type::word));
+    }
   }
 
   const int64_t ntokens = dict_->ntokens();
   int64_t localTokenCount = 0;
   std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
+
   while (tokenCount_ < args_->epoch * ntokens) {
     real progress = real(tokenCount_) / (args_->epoch * ntokens);
     real lr = args_->lr * (1.0 - progress);
     if (args_->model == model_name::sup) {
-      localTokenCount += dict_->getLine(ifs, line, labels);
-      supervised(model, lr, line, labels);
+      if(args_->tfidf)
+        localTokenCount += dict_->getLineTfIdf(ifs, line, line_values, labels);
+      else
+        localTokenCount += dict_->getLine(ifs, line, line_values, labels);
+      supervised(model, lr, line, line_values, labels);
     } else if (args_->model == model_name::cbow) {
       localTokenCount += dict_->getLine(ifs, line, model.rng);
       cbow(model, lr, line);
@@ -646,6 +686,13 @@ void FastText::loadVectors(std::string filename) {
 void FastText::train(const Args args) {
   args_ = std::make_shared<Args>(args);
   dict_ = std::make_shared<Dictionary>(args_);
+
+  if (args_->verbose > 2) {
+    std::cerr << "Training ...\n";
+    args_->printInfo();
+    std::cerr << "Reading input file ...\n";
+  }
+
   if (args_->input == "-") {
     // manage expectations
     throw std::invalid_argument("Cannot use stdin for training!");
@@ -662,25 +709,51 @@ void FastText::train(const Args args) {
     loadVectors(args_->pretrainedVectors);
   } else {
     input_ = std::make_shared<Matrix>(dict_->nwords()+args_->bucket, args_->dim);
-    input_->uniform(1.0 / args_->dim);
+    if(args_->initZeros) input_->zero();
+    else input_->uniform(1.0 / args_->dim);
   }
 
+  if (args_->verbose > 2)
+    std::cerr << "  Input: " << input_->rows() << " x " << input_->cols() << "\n";
+
+  if (args_->verbose > 2)
+    std::cerr << "Setting up loss layer ...\n";
+
+  lossLayer_ = lossLayerFactory(args_);
+  if(lossLayer_ != nullptr)
+    lossLayer_->setup(args_, dict_);
+
   if (args_->model == model_name::sup) {
-    output_ = std::make_shared<Matrix>(dict_->nlabels(), args_->dim);
+    if(lossLayer_ != nullptr)
+      output_ = std::make_shared<Matrix>(lossLayer_->getSize(), args_->dim);
+    else
+      output_ = std::make_shared<Matrix>(dict_->nlabels(), args_->dim);
   } else {
     output_ = std::make_shared<Matrix>(dict_->nwords(), args_->dim);
   }
   output_->zero();
+
+  if (args_->verbose > 2)
+    std::cerr << "  Output: " << output_->rows() << " x " << output_->cols() << "\n";
+
   startThreads();
-  model_ = std::make_shared<Model>(input_, output_, args_, 0);
-  if (args_->model == model_name::sup) {
-    model_->setTargetCounts(dict_->getCounts(entry_type::label));
-  } else {
-    model_->setTargetCounts(dict_->getCounts(entry_type::word));
+  model_ = std::make_shared<Model>(input_, output_, args_, lossLayer_, 0);
+  if(lossLayer_ == nullptr){
+    if (args_->model == model_name::sup) {
+      model_->setTargetCounts(dict_->getCounts(entry_type::label));
+    } else {
+      model_->setTargetCounts(dict_->getCounts(entry_type::word));
+    }
   }
+
+  if(lossLayer_ != nullptr)
+    lossLayer_->printInfo();
 }
 
 void FastText::startThreads() {
+  if (args_->verbose > 2)
+    std::cerr << "Starting " << args_->thread << " threads ...\n";
+
   start_ = clock();
   tokenCount_ = 0;
   loss_ = -1;

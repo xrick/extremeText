@@ -26,6 +26,10 @@ void Matrix::zero() {
   std::fill(data_.begin(), data_.end(), 0.0);
 }
 
+void Matrix::zero(int64_t i) {
+  std::fill(&data_[i * n_], &data_[i * n_ + n_], 0.0);
+}
+
 void Matrix::uniform(real a) {
   std::minstd_rand rng(1);
   std::uniform_real_distribution<> uniform(-a, a);
@@ -54,6 +58,15 @@ void Matrix::addRow(const Vector& vec, int64_t i, real a) {
   assert(vec.size() == n_);
   for (int64_t j = 0; j < n_; j++) {
     data_[i * n_ + j] += a * vec[j];
+  }
+}
+
+void Matrix::addRowL1(const Vector& vec, int64_t i, real a, real l1) {
+  assert(i >= 0);
+  assert(i < m_);
+  assert(vec.size() == n_);
+  for (int64_t j = 0; j < n_; j++) {
+    data_[i * n_ + j] += (a - l1/n_ * data_[i * n_ + j]) * vec[j];
   }
 }
 

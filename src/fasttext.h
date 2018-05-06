@@ -27,6 +27,7 @@
 #include "real.h"
 #include "utils.h"
 #include "vector.h"
+#include "losslayer.h"
 
 namespace fasttext {
 
@@ -45,6 +46,8 @@ class FastText {
 
   std::atomic<int64_t> tokenCount_;
   std::atomic<real> loss_;
+
+  std::shared_ptr<LossLayer> lossLayer_;
 
   clock_t start_;
   void signModel(std::ostream&);
@@ -87,6 +90,7 @@ class FastText {
       Model&,
       real,
       const std::vector<int32_t>&,
+      const std::vector<real>&,
       const std::vector<int32_t>&);
   void cbow(Model&, real, const std::vector<int32_t>&);
   void skipgram(Model&, real, const std::vector<int32_t>&);

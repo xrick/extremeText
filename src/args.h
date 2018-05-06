@@ -14,10 +14,13 @@
 #include <string>
 #include <vector>
 
+#include "real.h"
+
 namespace fasttext {
 
 enum class model_name : int { cbow = 1, sg, sup };
-enum class loss_name : int { hs = 1, ns, softmax };
+enum class loss_name : int { hs = 1, ns, softmax, plt };
+enum class tree_type_name : int { huffman = 1, complete, custom};
 
 class Args {
   protected:
@@ -49,12 +52,32 @@ class Args {
     int verbose;
     std::string pretrainedVectors;
     bool saveOutput;
+    bool saveVectors;
+    bool freezeVectors;
+    bool initZeros;
+    bool wordsWeights;
+    bool tfidf;
+    int bias = 0; // but works as bool (switch argument)
+    bool labelsOrder;
 
+    // Quantization args
     bool qout;
     bool retrain;
     bool qnorm;
     size_t cutoff;
     size_t dsub;
+
+    // PLT args
+    int arity;
+    real l1;
+    bool probNorm;
+    tree_type_name treeType;
+    std::string treeStructure;
+    bool randomTree;
+
+    // Bagging args
+    real bagging;
+    int nbase;
 
     void parseArgs(const std::vector<std::string>& args);
     void printHelp();
@@ -62,6 +85,7 @@ class Args {
     void printDictionaryHelp();
     void printTrainingHelp();
     void printQuantizationHelp();
+    void printInfo();
     void save(std::ostream&);
     void load(std::istream&);
     void dump(std::ostream&) const;
