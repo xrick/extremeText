@@ -70,6 +70,19 @@ void Matrix::addRowL1(const Vector& vec, int64_t i, real a, real l1) {
   }
 }
 
+
+void Matrix::addRowL2(const Vector& vec, int64_t i, real lr, real a, real lambda) {
+
+  assert(i >= 0);
+  assert(i < m_);
+  assert(vec.size() == n_);
+
+  for (int64_t j = 0; j < n_; j++) {
+    data_[i * n_ + j] += lr * (a * vec[j] - lambda * data_[i * n_ + j]);
+  }
+}
+
+
 void Matrix::multiplyRow(const Vector& nums, int64_t ib, int64_t ie) {
   if (ie == -1) {
     ie = m_;

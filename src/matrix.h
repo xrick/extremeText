@@ -66,6 +66,8 @@ class Matrix {
   real dotRow(const Vector&, int64_t) const;
   void addRow(const Vector&, int64_t, real);
   void addRowL1(const Vector&, int64_t, real, real);
+  void addRowL2(const Vector&, int64_t, real, real, real);
+
 
   void multiplyRow(const Vector& nums, int64_t ib = 0, int64_t ie = -1);
   void divideRow(const Vector& denoms, int64_t ib = 0, int64_t ie = -1);
