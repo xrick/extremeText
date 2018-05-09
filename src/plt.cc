@@ -30,10 +30,10 @@ struct compare_node_ptr_functor{
     bool operator()(const NodePLT* l, const NodePLT* r) const { return (*l < *r); }
 };
 
-bool compare_node_freq_ptr_func(const NodeFrequency* l, const NodeFrequency* r) { return (*l < *r); }
+bool compare_node_freq_ptr_func(const NodeFrequency* l, const NodeFrequency* r) { return (*l > *r); }
 
 struct compare_node_freq_ptr_functor{
-    bool operator()(const NodeFrequency* l, const NodeFrequency* r) const { return (*l < *r); }
+    bool operator()(const NodeFrequency* l, const NodeFrequency* r) const { return (*l > *r); }
 };
 
 
@@ -79,7 +79,6 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
             NodeFrequency *tmp = freqheap.top();
             freqheap.pop();
             toMerge.push_back(tmp);
-
             if (freqheap.empty()) break;
         }
 
