@@ -195,12 +195,12 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     score = model_->sigmoid(score);
 
     //real alpha = lr * (label - score);
-    real mv = (label - score);
+    real diff = (label - score);
     //model_->updateGrad(shift + n->n, alpha);
-    model_->grad_.addRow(*model_->wo_, shift + n->n, (lr * mv) / args_->nbase);//
-    //model_->wo_->addRow(model_->hidden_, shift + n->n, alpha); //(lr * mv)
+    model_->grad_.addRow(*model_->wo_, shift + n->n, (lr * diff) / args_->nbase);//
+    //model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
     //model_->wo_->addRowL1(model_->hidden_, shift + n->n, alpha, l1);
-    model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, mv, l2);
+    model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, diff, l2);
 
     if (label) {
         ++n->n_positive_updates;
