@@ -81,7 +81,7 @@ private:
 
     Model *model_;
 
-    real learnNode(NodePLT *n, real label, real lr, Model *model_);
+    real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
     real predictNode(NodePLT *n, Vector& hidden, const Model *model_);
 
     void buildCompletePLTree(int32_t);

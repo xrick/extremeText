@@ -69,7 +69,7 @@ class Args {
 
     // PLT args
     int arity;
-    real l1;
+    real l2;
     bool probNorm;
     tree_type_name treeType;
     std::string treeStructure;

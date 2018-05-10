@@ -53,7 +53,7 @@ Args::Args() {
 
   // PLT args
   arity = 2;
-  l1 = 0;
+  l2 = 0;
   bias = 0;
   treeType = tree_type_name::complete;
   treeStructure = "";
@@ -108,6 +108,7 @@ void Args::parseArgs(const std::vector<std::string>& args) {
     minn = 0;
     maxn = 0;
     lr = 0.1;
+    l2 = 0;
   } else if (command == "cbow") {
     model = model_name::cbow;
   }
@@ -217,8 +218,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       // PLT args
       } else if (args[ai] == "-arity") {
         arity = std::stoi(args.at(ai + 1));
-      } else if (args[ai] == "-dsub") {
-        l1 = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-l2") {
+        l2 = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
       } else if (args[ai] == "-randomTree") {
@@ -349,6 +350,7 @@ void Args::save(std::ostream& out) {
 
   // PLT args
   out.write((char*) &(arity), sizeof(int));
+  out.write((char*) &(l2), sizeof(real));
 
   // Bagging args
   out.write((char*) &(bagging), sizeof(real));
@@ -374,6 +376,7 @@ void Args::load(std::istream& in) {
 
   // PLT args
   in.read((char*) &(arity), sizeof(int));
+  in.read((char*) &(l2), sizeof(real));
 
   // Bagging args
   in.read((char*) &(bagging), sizeof(real));

@@ -183,7 +183,7 @@ void PLT::loadTreeStructure(std::string filename){
     assert(tree_leaves.size() == k);
 }
 
-real PLT::learnNode(NodePLT *n, real label, real lr, Model *model_){
+real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     if(n->label < 0) ++n_in_vis_count;
     ++n_vis_count;
     ++n->n_updates;
@@ -201,7 +201,7 @@ real PLT::learnNode(NodePLT *n, real label, real lr, Model *model_){
     model_->grad_.addRow(*model_->wo_, shift + n->n, (lr * mv) / args_->nbase);//
     //model_->wo_->addRow(model_->hidden_, shift + n->n, alpha); //(lr * mv)
     //model_->wo_->addRowL1(model_->hidden_, shift + n->n, alpha, l1);
-    model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, mv, 0.01);
+    model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, mv, l2);
 
     if (label) {
         ++n->n_positive_updates;
@@ -236,7 +236,12 @@ NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
 //----------------------------------------------------------------------------------------------------------------------
 
 real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
+
+    double l2 = model_->args_->l2;
+
     real loss = 0.0;
+
+
 
     std::unordered_set<NodePLT*> n_positive; // positive nodes
     std::unordered_set<NodePLT*> n_negative; // negative nodes
@@ -271,12 +276,12 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 
     real label = 1.0;
     for (auto &n : n_positive){
-        loss += learnNode(n, label, lr, model_);
+        loss += learnNode(n, label, lr, l2, model_);
     }
 
     label = 0.0;
     for (auto &n : n_negative){
-        loss += learnNode(n, label, lr, model_);
+        loss += learnNode(n, label, lr, l2, model_);
     }
 
     //std::cout << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";

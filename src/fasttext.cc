@@ -262,6 +262,7 @@ void FastText::printInfo(real progress, real loss, std::ostream& log_stream) {
   // clock_t might also only be 32bits wide on some systems
   double t = double(clock() - start_) / double(CLOCKS_PER_SEC);
   double lr = args_->lr * (1.0 - progress);
+  double l2 = args_->l2;
   double wst = 0;
   int64_t eta = 720 * 3600; // Default to one month
   if (progress > 0 && t >= 0) {
@@ -276,6 +277,7 @@ void FastText::printInfo(real progress, real loss, std::ostream& log_stream) {
   log_stream << std::setprecision(1) << std::setw(5) << progress << "%";
   log_stream << " words/sec/thread: " << std::setw(7) << int64_t(wst);
   log_stream << " lr: " << std::setw(9) << std::setprecision(6) << lr;
+  log_stream << " l2: " << std::setw(9) << std::setprecision(6) << l2;
   log_stream << " loss: " << std::setw(9) << std::setprecision(6) << loss;
   log_stream << " ETA: " << std::setw(3) << etah;
   log_stream << "h" << std::setw(2) << etam << "m";
