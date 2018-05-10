@@ -54,6 +54,7 @@ struct NodeFrequency{
   int64_t frequency;
 
   bool operator<(const NodeFrequency& r) const { return frequency < r.frequency; }
+  bool operator>(const NodeFrequency& r) const { return frequency > r.frequency; }
 };
 
 class PLT: public LossLayer{

@@ -19,7 +19,7 @@ fi
 
 if [ ! -e ${BIN} ]; then
     cd ${SCRIPT_DIR}/..
-    make
+    make -j
     cd -
 fi
 
