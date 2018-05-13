@@ -71,6 +71,16 @@ void Vector::addRow(const Matrix& A, int64_t i, real a) {
   }
 }
 
+void Vector::addRowL2(const Matrix& A, int64_t i, real lr, real a, real l2) {
+  assert(i >= 0);
+  assert(i < A.size(0));
+  assert(size() == A.size(1));
+  for (int64_t j = 0; j < A.size(1); j++) {
+    data_[j] += lr* ( a * A.at(i, j) - l2 * data_[j]);
+  }
+}
+
+
 void Vector::addRow(const QMatrix& A, int64_t i) {
   assert(i >= 0);
   A.addToVector(*this, i);
