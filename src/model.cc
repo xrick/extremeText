@@ -264,6 +264,7 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
 
   if (input.size() == 0) return;
   real values_sum = computeHidden(input, input_values, hidden_);
+  grad_.zero();
 
   if (lossLayer_ != nullptr && lossLayer_->isMultilabel()){
     loss_ += lossLayer_->loss(input, labels, lr, this);
