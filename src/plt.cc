@@ -195,14 +195,14 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     score = model_->sigmoid(score);
 
     double lambda = 0.00001;
-    double gamma = 0.5;
+    double gamma = 1.0;
     double lr_tmp = gamma /(1.0 + gamma * lambda * n->n_updates);
     //double lr_tmp = lr;
     //real alpha = lr * (label - score);
     real diff = (label - score);
     //model_->updateGrad(shift + n->n, alpha);
     //model_->grad_.addRow(*model_->wo_, shift + n->n, (lr_tmp * diff) / args_->nbase);//
-    model_->grad_.addRowL2(*model_->wo_, shift + n->n, lr, diff / args_->nbase, l2);//
+    model_->grad_.addRowL2(*model_->wo_, shift + n->n, 1.0, diff / args_->nbase, l2);//
     //model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
     //model_->wo_->addRowL1(model_->hidden_, shift + n->n, alpha, l1);
     model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, diff, l2);
@@ -287,6 +287,8 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     for (auto &n : n_negative){
         loss += learnNode(n, label, lr, l2, model_);
     }
+
+    model_->grad_.mul(lr/ (real)(n_positive.size()+n_negative.size()));
 
     //std::cout << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";
     y_count += labels.size();
