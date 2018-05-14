@@ -82,6 +82,20 @@ void Matrix::addRowL2(const Vector& vec, int64_t i, real lr, real a, real lambda
   }
 }
 
+void Matrix::addRowL2Fobos(const Vector& vec, int64_t i, real lr, real a, real lambda) {
+
+  assert(i >= 0);
+  assert(i < m_);
+  assert(vec.size() == n_);
+
+  double mul = 1.0 / (1.0+lambda*lr);
+
+  for (int64_t j = 0; j < n_; j++) {
+    data_[i * n_ + j] += lr * (a * vec[j]);
+    data_[i * n_ + j] *= mul;
+  }
+}
+
 
 void Matrix::multiplyRow(const Vector& nums, int64_t ib, int64_t ie) {
   if (ie == -1) {

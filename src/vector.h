@@ -55,6 +55,7 @@ class Vector {
     void addRow(const QMatrix&, int64_t);
     void addRow(const Matrix&, int64_t, real);
     void addRowL2(const Matrix&, int64_t, real, real, real);
+    void addRowL2Fobos(const Matrix&, int64_t, real, real, real);
     void mul(const QMatrix&, const Vector&);
     void mul(const Matrix&, const Vector&);
     int64_t argmax();
