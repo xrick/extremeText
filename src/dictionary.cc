@@ -251,7 +251,7 @@ bool Dictionary::readWord(std::istream& in, std::string& word, real& value) cons
       }
     }
     if (val_part) val.push_back(c);
-    if (c == ':') val_part = true;
+    else if (c == ':') val_part = true;
     else word.push_back(c);
   }
   // trigger eofbit
@@ -284,8 +284,8 @@ void Dictionary::readFromFile(std::istream& in) {
   if (args_->verbose > 0) {
     std::cerr << "\rRead " << ntokens_  / 1000000 << "M words" << std::endl;
     std::cerr << "Number of documents: " << ndocs_ << std::endl;
-    std::cerr << "Number of words:     " << nwords_ << std::endl;
-    std::cerr << "Number of labels:    " << nlabels_ << std::endl;
+    std::cerr << "Number of words: " << nwords_ << std::endl;
+    std::cerr << "Number of labels: " << nlabels_ << std::endl;
   }
   if (size_ == 0) {
     throw std::invalid_argument(
@@ -448,8 +448,8 @@ int32_t Dictionary::getLine(std::istream& in,
     }
     if (token == EOS) break;
   }
-  //TODO: add support for word ngrams
 
+  //TODO: add support for word ngrams
 //  addWordNgrams(words, word_hashes, args_->wordNgrams);
 //  while(words.size() != words_values.size())
 //    words_values.push_back(1);
@@ -460,6 +460,16 @@ int32_t Dictionary::getLine(std::istream& in,
 //  for(auto &it : words_values){
 //    it = it / values_sum * words.size();
 //  }
+
+  words.pop_back();
+  words_values.pop_back();
+
+  // Unit Norm
+//  real norm = 0;
+//  for(const auto& i : words_values) norm += i * i;
+//  norm = std::sqrt(norm);
+//  if(norm == 0) norm = 1;
+//  for(auto& i : words_values) i /= norm;
 
   assert(words.size() == words_values.size());
 

@@ -53,12 +53,14 @@ class Args {
     std::string pretrainedVectors;
     bool saveOutput;
     bool saveVectors;
+    bool saveDocVectors;
     bool freezeVectors;
     bool initZeros;
     bool wordsWeights;
     bool tfidf;
     int bias = 0; // but works as bool (switch argument)
     bool labelsOrder;
+
 
     // Quantization args
     bool qout;
@@ -69,11 +71,14 @@ class Args {
 
     // PLT args
     int arity;
-    real l2;
     bool probNorm;
     tree_type_name treeType;
     std::string treeStructure;
     bool randomTree;
+
+    // Update args
+    bool fobos;
+    real l2;
 
     // Bagging args
     real bagging;

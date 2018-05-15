@@ -38,6 +38,7 @@ Args::Args() {
   pretrainedVectors = "";
   saveOutput = false;
   saveVectors = false;
+  saveDocVectors = false;
   freezeVectors = false;
   initZeros = false;
   wordsWeights = false;
@@ -58,6 +59,7 @@ Args::Args() {
   treeType = tree_type_name::complete;
   treeStructure = "";
   randomTree = false;
+  fobos = false;
 
   // Bagging args
   bagging = -1;
@@ -108,7 +110,6 @@ void Args::parseArgs(const std::vector<std::string>& args) {
     minn = 0;
     maxn = 0;
     lr = 0.1;
-    l2 = 0;
   } else if (command == "cbow") {
     model = model_name::cbow;
   }
@@ -181,6 +182,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-saveVectors") {
         saveVectors = true;
         ai--;
+      } else if (args[ai] == "-saveDocVectors") {
+        saveDocVectors = true;
+        ai--;
       } else if (args[ai] == "-freezeVectors") {
         freezeVectors = true;
         ai--;
@@ -220,6 +224,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         arity = std::stoi(args.at(ai + 1));
       } else if (args[ai] == "-l2") {
         l2 = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-fobos") {
+        fobos = true;
+        ai--;
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
       } else if (args[ai] == "-randomTree") {

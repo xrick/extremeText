@@ -138,6 +138,7 @@ void Model::computeHidden(const std::vector<int32_t>& input, Vector& hidden) con
 real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<real>& input_values, Vector& hidden) const {
   assert(hidden.size() == hsz_);
   assert(input.size() == input_values.size());
+
   hidden.zero();
   real values_sum = 0;
   for (auto it = 0; it < input.size(); ++it){
