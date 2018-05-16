@@ -160,7 +160,7 @@ void test(const std::vector<std::string>& args) {
   std::cerr << "Number of examples: " << std::get<0>(result) << std::endl;
 
   if (fasttext.getArgs().saveDocuments)
-    fasttext.saveDocuments(args[2]);
+    fasttext.saveDocuments(args[3], args[2]);
 }
 
 void predict(const std::vector<std::string>& args) {
@@ -309,7 +309,7 @@ void train(const std::vector<std::string> args) {
   if (a.saveOutput)
     fasttext.saveOutput();
   if (a.saveDocuments)
-    fasttext.saveDocuments(a.output);
+    fasttext.saveDocuments(a.input, a.output);
 }
 
 void dump(const std::vector<std::string>& args) {
@@ -345,6 +345,16 @@ void dump(const std::vector<std::string>& args) {
   }
 }
 
+void saveAll(const std::vector<std::string>& args) {
+    FastText fasttext;
+    fasttext.loadModel(args[2]);
+
+    std::string infile = args[3];
+    //fasttext.saveOutput();
+    //fasttext.saveVectors();
+    fasttext.saveDocuments(args[3], args[2]);
+}
+
 int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   if (args.size() < 2) {
@@ -372,6 +382,8 @@ int main(int argc, char** argv) {
     predict(args);
   } else if (command == "dump") {
     dump(args);
+  } else if (command == "save-all") {
+    saveAll(args);
   } else {
     printUsage();
     exit(EXIT_FAILURE);

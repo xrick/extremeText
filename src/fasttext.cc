@@ -129,7 +129,7 @@ void FastText::saveOutput() {
   ofs.close();
 }
 
-void FastText::saveDocuments(const std::string output) {
+void FastText::saveDocuments(const std::string input, const std::string output) {
   if (args_->verbose > 2)
     std::cerr << "Saving documents ...\n";
 
@@ -138,15 +138,15 @@ void FastText::saveDocuments(const std::string output) {
             "Option -saveDocuments is not supported for not supervised models.");
   }
 
-  std::string extension;
-  if(args_->train) extension = "_train.text";
-  else extension = "_test.text";
+  std::string output_;
+  if(args_->train) output_ = output + "_train.txt";
+  else output_ = output.substr(0, input.size() - 4) + "_test.txt";
 
-  std::ifstream ifs(args_->input);
-  std::ofstream ofs(output + extension);
+  std::ifstream ifs(input);
+  std::ofstream ofs(output_);
   if (!ofs.is_open()) {
     throw std::invalid_argument(
-            output + extension + " cannot be opened for saving vectors!");
+            output_ + " cannot be opened for saving vectors!");
   }
 
   std::vector<int32_t> line, labels;
