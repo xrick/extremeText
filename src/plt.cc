@@ -183,12 +183,8 @@ void PLT::loadTreeStructure(std::string filename){
 }
 
 real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
-    if(n->label < 0) ++n_in_vis_count;
-    ++n_vis_count;
-    ++n->n_updates;
 
     //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->n));
-
     real score = model_->wo_->dotRow(model_->hidden_, shift + n->n);
     if(score > MAX_SIGMOID) score = MAX_SIGMOID;
     else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
@@ -208,13 +204,36 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
      */
 
-    if(model_->args_->fobos){
+    // Labels' wieghts
+    /*
+    if(args_->labelsWeights && n->n_updates > ndocs){
+        if(n->minWeight == 0) {
+            uint32_t n_negative_updates = n->n_updates - n->n_positive_updates;
+            if (n_negative_updates && n->n_positive_updates) {
+                if (label && n_negative_updates > n->n_positive_updates) {
+                    n->minWeight = 1.0 + log(static_cast<double>(n_negative_updates) / n->n_positive_updates);
+                    n->minLabel = label;
+                }
+                else if (label == 0 && n->n_positive_updates > n_negative_updates) {
+                    n->minWeight = 1.0 + log(static_cast<double>(n->n_positive_updates) / n_negative_updates);
+                    n->minLabel = label;
+                }
+            }
+        } else if(label == n->minLabel) lr *= n->minWeight;
+    }
+     */
+
+    if(args_->fobos){
         model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->n, lr, diff / args_->nbase, l2);
         model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->n, lr, diff, l2);
     } else {
         model_->grad_.addRowL2(*model_->wo_, shift + n->n, lr, diff / args_->nbase, l2);
         model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, diff, l2);
     }
+
+    if(n->label < 0) ++n_in_vis_count;
+    ++n_vis_count;
+    ++n->n_updates;
 
     if (label) {
         ++n->n_positive_updates;
@@ -237,6 +256,7 @@ NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
     n->parent = parent;
     n->n_updates = 0;
     n->n_positive_updates = 0;
+    //n->minWeight = 0;
 
     tree.push_back(n);
     if(label >= 0) tree_leaves[n->label] = n;
@@ -249,12 +269,6 @@ NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
 //----------------------------------------------------------------------------------------------------------------------
 
 real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
-
-    double l2 = model_->args_->l2;
-
-    real loss = 0.0;
-
-
 
     std::unordered_set<NodePLT*> n_positive; // positive nodes
     std::unordered_set<NodePLT*> n_negative; // negative nodes
@@ -287,6 +301,9 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     else
         n_negative.insert(tree_root);
 
+    real loss = 0.0;
+    double l2 = args_->l2;
+
     real label = 1.0;
     for (auto &n : n_positive){
         loss += learnNode(n, label, lr, l2, model_);
@@ -296,8 +313,6 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     for (auto &n : n_negative){
         loss += learnNode(n, label, lr, l2, model_);
     }
-
-    //model_->grad_.mul(lr/ (real)(n_positive.size()+n_negative.size()));
 
     //std::cout << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";
     y_count += labels.size();
@@ -405,6 +420,7 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
 void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
     args_ = args;
+    ndocs = dict->ndocs();
     if(args_->treeStructure != ""){
         args_->treeType = tree_type_name::custom;
         loadTreeStructure(args_->treeStructure);

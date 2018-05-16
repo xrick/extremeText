@@ -129,6 +129,46 @@ void FastText::saveOutput() {
   ofs.close();
 }
 
+void FastText::saveDocuments(const std::string output) {
+  if (args_->verbose > 2)
+    std::cerr << "Saving documents ...\n";
+
+  if (args_->model != model_name::sup){
+    throw std::invalid_argument(
+            "Option -saveDocuments is not supported for not supervised models.");
+  }
+
+  std::string extension;
+  if(args_->train) extension = "_train.text";
+  else extension = "_test.text";
+
+  std::ifstream ifs(args_->input);
+  std::ofstream ofs(output + extension);
+  if (!ofs.is_open()) {
+    throw std::invalid_argument(
+            output + extension + " cannot be opened for saving vectors!");
+  }
+
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
+  Vector hidden_(args_->dim);
+  ofs << dict_->ndocs() << " " << args_->dim << " " << dict_->nlabels() << "\n";
+  for (int32_t i = 0; i < dict_->ndocs(); i++) {
+    if(args_->tfidf) dict_->getLineTfIdf(ifs, line, line_values, labels);
+    else dict_->getLine(ifs, line, line_values, labels);
+    model_->computeHidden(line, line_values, hidden_);
+
+    if(labels.size()){
+      ofs << labels[0];
+      for (int32_t l = 1; l < labels.size(); ++l) ofs << "," << labels[l];
+    }
+    for (int32_t f = 0; f < args_->dim; ++f) ofs << " " << f << ":" << hidden_[f];
+    ofs << "\n";
+  }
+  ofs.close();
+  ifs.close();
+}
+
 bool FastText::checkModel(std::istream& in) {
   int32_t magic;
   in.read((char*)&(magic), sizeof(int32_t));

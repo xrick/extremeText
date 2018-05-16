@@ -42,6 +42,8 @@ struct NodePLT{
   // training
   uint32_t n_updates;
   uint32_t n_positive_updates;
+  //real minWeight;
+  //real minLabel;
 
   // prediction
   float p; // probability
@@ -59,7 +61,6 @@ struct NodeFrequency{
 
 class PLT: public LossLayer{
 private:
-
     uint32_t k; // number of labels
     uint32_t t; // number of tree nodes
     bool separate_lr;
@@ -70,6 +71,7 @@ private:
     int n_vis_count;
     int y_count;
     int x_count;
+    int ndocs;
 
     NodePLT *tree_root;
     std::vector<NodePLT*> tree; // pointers to tree nodes

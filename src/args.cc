@@ -17,6 +17,7 @@
 namespace fasttext {
 
 Args::Args() {
+  train = false;
   lr = 0.05;
   dim = 100;
   ws = 5;
@@ -38,11 +39,12 @@ Args::Args() {
   pretrainedVectors = "";
   saveOutput = false;
   saveVectors = false;
-  saveDocVectors = false;
+  saveDocuments = false;
   freezeVectors = false;
   initZeros = false;
   wordsWeights = false;
   tfidf = false;
+  unitNorm = false;
   labelsOrder = false;
 
   // Quantization args
@@ -54,12 +56,17 @@ Args::Args() {
 
   // PLT args
   arity = 2;
-  l2 = 0;
+
   bias = 0;
   treeType = tree_type_name::complete;
   treeStructure = "";
   randomTree = false;
+
+
+  // Update args
+  l2 = 0;
   fobos = false;
+  labelsWeights = false;
 
   // Bagging args
   bagging = -1;
@@ -182,8 +189,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-saveVectors") {
         saveVectors = true;
         ai--;
-      } else if (args[ai] == "-saveDocVectors") {
-        saveDocVectors = true;
+      } else if (args[ai] == "-saveDocuments") {
+        saveDocuments = true;
         ai--;
       } else if (args[ai] == "-freezeVectors") {
         freezeVectors = true;
@@ -196,6 +203,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         ai--;
       } else if (args[ai] == "-tfidf") {
         tfidf = true;
+        ai--;
+      } else if (args[ai] == "-unitNorm") {
+        unitNorm = true;
         ai--;
       } else if (args[ai] == "-bias") {
         bias = 1;
@@ -226,6 +236,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         l2 = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-fobos") {
         fobos = true;
+        ai--;
+      } else if (args[ai] == "-labelsWeights") {
+        labelsWeights = true;
         ai--;
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
@@ -355,10 +368,12 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(t), sizeof(double));
   out.write((char*) &(wordsWeights), sizeof(bool));
   out.write((char*) &(tfidf), sizeof(bool));
+  out.write((char*) &(saveDocuments), sizeof(bool));
 
   // PLT args
   out.write((char*) &(arity), sizeof(int));
   out.write((char*) &(l2), sizeof(real));
+  out.write((char*) &(unitNorm), sizeof(bool));
 
   // Bagging args
   out.write((char*) &(bagging), sizeof(real));
@@ -382,15 +397,16 @@ void Args::load(std::istream& in) {
   in.read((char*) &(t), sizeof(double));
   in.read((char*) &(wordsWeights), sizeof(bool));
   in.read((char*) &(tfidf), sizeof(bool));
+  in.read((char*) &(saveDocuments), sizeof(bool));
 
   // PLT args
   in.read((char*) &(arity), sizeof(int));
   in.read((char*) &(l2), sizeof(real));
+  in.read((char*) &(unitNorm), sizeof(bool));
 
   // Bagging args
   in.read((char*) &(bagging), sizeof(real));
   in.read((char*) &(nbase), sizeof(int));
-
 }
 
 void Args::dump(std::ostream& out) const {

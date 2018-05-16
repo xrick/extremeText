@@ -30,6 +30,7 @@ class Args {
 
   public:
     Args();
+    bool train;
     std::string input;
     std::string output;
     double lr;
@@ -53,14 +54,14 @@ class Args {
     std::string pretrainedVectors;
     bool saveOutput;
     bool saveVectors;
-    bool saveDocVectors;
+    bool saveDocuments;
     bool freezeVectors;
     bool initZeros;
     bool wordsWeights;
     bool tfidf;
     int bias = 0; // but works as bool (switch argument)
     bool labelsOrder;
-
+    bool unitNorm;
 
     // Quantization args
     bool qout;
@@ -79,6 +80,7 @@ class Args {
     // Update args
     bool fobos;
     real l2;
+    bool labelsWeights;
 
     // Bagging args
     real bagging;

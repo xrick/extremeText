@@ -145,7 +145,8 @@ real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<r
     hidden.addRow(*wi_, input[it], input_values[it]);
     values_sum += input_values[it];
   }
-  hidden.mul(1.0 / values_sum);
+  if(!args_->unitNorm) hidden.mul(1.0 / values_sum);
+
   //assert(input.size() == values_sum);
   return values_sum;
 }
@@ -285,7 +286,6 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
     }
   }
   nexamples_ += 1;
-
   if (args_->model == model_name::sup) {
     grad_.mul(1.0 / values_sum);
     //grad_.mul(1.0 / input.size());

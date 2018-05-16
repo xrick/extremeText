@@ -42,10 +42,10 @@ class Vector {
     inline const real& operator[](int64_t i) const {
       return data_[i];
     }
-
     inline int64_t size() const {
       return data_.size();
     }
+
     void zero();
     void mul(real);
     real norm() const;

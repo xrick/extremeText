@@ -158,6 +158,9 @@ void test(const std::vector<std::string>& args) {
   std::cout << "P@" << k << "\t" << std::get<1>(result) << std::endl;
   std::cout << "R@" << k << "\t" << std::get<2>(result) << std::endl;
   std::cerr << "Number of examples: " << std::get<0>(result) << std::endl;
+
+  if (fasttext.getArgs().saveDocuments)
+    fasttext.saveDocuments(args[2]);
 }
 
 void predict(const std::vector<std::string>& args) {
@@ -190,6 +193,7 @@ void predict(const std::vector<std::string>& args) {
     fasttext.predict(ifs, k, print_prob, threshold);
     ifs.close();
   }
+
 
   exit(0);
 }
@@ -290,6 +294,7 @@ void analogies(const std::vector<std::string> args) {
 
 void train(const std::vector<std::string> args) {
   Args a = Args();
+  a.train = true;
   a.parseArgs(args);
   FastText fasttext;
   std::ofstream ofs(a.output+".bin");
@@ -303,6 +308,8 @@ void train(const std::vector<std::string> args) {
     fasttext.saveVectors();
   if (a.saveOutput)
     fasttext.saveOutput();
+  if (a.saveDocuments)
+    fasttext.saveDocuments(a.output);
 }
 
 void dump(const std::vector<std::string>& args) {
