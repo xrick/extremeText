@@ -160,7 +160,7 @@ void test(const std::vector<std::string>& args) {
   std::cerr << "Number of examples: " << std::get<0>(result) << std::endl;
 
   if (fasttext.getArgs().saveDocuments)
-    fasttext.saveDocuments(args[3], args[2]);
+    fasttext.saveDocuments(args[3], args[2], "test");
 }
 
 void predict(const std::vector<std::string>& args) {
@@ -309,7 +309,7 @@ void train(const std::vector<std::string> args) {
   if (a.saveOutput)
     fasttext.saveOutput();
   if (a.saveDocuments)
-    fasttext.saveDocuments(a.input, a.output);
+    fasttext.saveDocuments(a.input, a.output, "train");
 }
 
 void dump(const std::vector<std::string>& args) {
@@ -352,7 +352,7 @@ void saveAll(const std::vector<std::string>& args) {
     std::string infile = args[3];
     //fasttext.saveOutput();
     //fasttext.saveVectors();
-    fasttext.saveDocuments(args[3], args[2]);
+    fasttext.saveDocuments(args[3], args[2], args[4]);
 }
 
 int main(int argc, char** argv) {

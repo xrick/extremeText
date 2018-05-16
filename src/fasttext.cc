@@ -129,7 +129,7 @@ void FastText::saveOutput() {
   ofs.close();
 }
 
-void FastText::saveDocuments(const std::string input, const std::string output) {
+void FastText::saveDocuments(const std::string input, const std::string output, const std::string suffix) {
   if (args_->verbose > 2)
     std::cerr << "Saving documents ...\n";
 
@@ -138,10 +138,7 @@ void FastText::saveDocuments(const std::string input, const std::string output) 
             "Option -saveDocuments is not supported for not supervised models.");
   }
 
-  std::string output_;
-  if(args_->train) output_ = output + "_train.txt";
-  else output_ = output.substr(0, input.size() - 4) + "_test.txt";
-
+  std::string output_ = output.substr(0, output.size() - 4) + "_" + suffix + ".txt";
   std::ifstream ifs(input);
   std::ofstream ofs(output_);
   if (!ofs.is_open()) {
@@ -152,8 +149,16 @@ void FastText::saveDocuments(const std::string input, const std::string output) 
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
   Vector hidden_(args_->dim);
-  ofs << dict_->ndocs() << " " << args_->dim << " " << dict_->nlabels() << "\n";
-  for (int32_t i = 0; i < dict_->ndocs(); i++) {
+
+  uint32_t docs = 0;
+  std::string dummyLine;
+  while(std::getline(ifs, dummyLine)) ++docs;
+  ifs.close();
+  ifs.open(input);
+
+  ofs << docs << " " << args_->dim << " " << dict_->nlabels() << "\n";
+
+  for (int32_t i = 0; i < docs; i++) {
     if(args_->tfidf) dict_->getLineTfIdf(ifs, line, line_values, labels);
     else dict_->getLine(ifs, line, line_values, labels);
     model_->computeHidden(line, line_values, hidden_);
