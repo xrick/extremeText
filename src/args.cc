@@ -56,12 +56,11 @@ Args::Args() {
 
   // PLT args
   arity = 2;
-
   bias = 0;
   treeType = tree_type_name::complete;
   treeStructure = "";
   randomTree = false;
-
+  probNorm = false;
 
   // Update args
   l2 = 0;
@@ -213,6 +212,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-labelsOrder") {
         labelsOrder = true;
         ai--;
+      } else if (args[ai] == "-probNorm") {
+        probNorm = true;
+        ai--;
 
       // Quantization args
       } else if (args[ai] == "-qnorm") {
@@ -343,12 +345,10 @@ void Args::printInfo(){
   if(model == model_name::sup){
       if(tfidf) std::cerr << "  Features: tf-idf\n";
       else if(wordsWeights) std::cerr << "  Features: word weights\n";
-      else{
-          std::cerr << "  Features: bow\n";
-      }
+      else std::cerr << "  Features: bow\n";
   }
   std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch << ", buckets: " << bucket << "\n";
-
+  std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
 }
 
 void Args::save(std::ostream& out) {

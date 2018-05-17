@@ -351,17 +351,18 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
             if (n->label < 0) {
                 float sumOfP = 0.0f;
                 for (auto child : n->children) {
-                    child->p = cp * predictNode(child, hidden, model_);
+                    child->p = predictNode(child, hidden, model_);
                     sumOfP += child->p;
                 }
-                if ((sumOfP < cp) && (sumOfP > 10e-6)) {
+                if (sumOfP < 1.0){ //&& (sumOfP > 10e-6)) {
                     for (auto child : n->children) {
-                        child->p = (child->p * cp) / sumOfP;
+                        child->p = child->p / sumOfP;
+
                     }
                 }
-                for (auto child : n->children) {
-                    if (child->p > n_queue.top()->p * 0.01)
-                        n_queue.push(child);
+                for (auto child : n->children){
+                    child->p *= cp;
+                    n_queue.push(child);
                 }
             } else {
                 heap.push_back(std::make_pair(n->p, n->label));
