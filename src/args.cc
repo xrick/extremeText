@@ -36,15 +36,20 @@ Args::Args() {
   t = 1e-4;
   label = "__label__";
   verbose = 5;
-  pretrainedVectors = "";
+
+  // Save args
   saveOutput = false;
   saveVectors = false;
   saveDocuments = false;
+
+  // Vectors init
+  pretrainedVectors = "";
   freezeVectors = false;
   initZeros = false;
+
+  // Features args
   wordsWeights = false;
   tfidf = false;
-  unitNorm = false;
   labelsOrder = false;
 
   // Quantization args
@@ -320,6 +325,7 @@ void Args::printTrainingHelp() {
     << "\nThe following arguments for training are optional:\n"
     << "  -lr                 learning rate [" << lr << "]\n"
     << "  -lrUpdateRate       change the rate of updates for the learning rate [" << lrUpdateRate << "]\n"
+    << "  -l2                 l2 regularization [" << l2 << "]\n"
     << "  -dim                size of word vectors [" << dim << "]\n"
     << "  -ws                 size of the context window [" << ws << "]\n"
     << "  -epoch              number of epochs [" << epoch << "]\n"
@@ -327,6 +333,7 @@ void Args::printTrainingHelp() {
     << "  -loss               loss function {ns, hs, softmax} [" << lossToString(loss) << "]\n"
     << "  -thread             number of threads [" << thread << "]\n"
     << "  -pretrainedVectors  pretrained word vectors for supervised learning ["<< pretrainedVectors <<"]\n"
+    << "  -wordsWeights       TODO"
     << "  -saveOutput         whether output params should be saved [" << boolToString(saveOutput) << "]\n";
 }
 
@@ -374,6 +381,7 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(arity), sizeof(int));
   out.write((char*) &(l2), sizeof(real));
   out.write((char*) &(unitNorm), sizeof(bool));
+  out.write((char*) &(probNorm), sizeof(bool));
 
   // Bagging args
   out.write((char*) &(bagging), sizeof(real));
@@ -403,6 +411,7 @@ void Args::load(std::istream& in) {
   in.read((char*) &(arity), sizeof(int));
   in.read((char*) &(l2), sizeof(real));
   in.read((char*) &(unitNorm), sizeof(bool));
+  in.read((char*) &(probNorm), sizeof(bool));
 
   // Bagging args
   in.read((char*) &(bagging), sizeof(real));

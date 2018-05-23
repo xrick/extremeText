@@ -322,7 +322,6 @@ void FastText::printInfo(real progress, real loss, std::ostream& log_stream) {
   log_stream << std::setprecision(1) << std::setw(5) << progress << "%";
   log_stream << " words/sec/thread: " << std::setw(7) << int64_t(wst);
   log_stream << " lr: " << std::setw(9) << std::setprecision(6) << lr;
-  log_stream << " l2: " << std::setw(9) << std::setprecision(6) << l2;
   log_stream << " loss: " << std::setw(9) << std::setprecision(6) << loss;
   log_stream << " ETA: " << std::setw(3) << etah;
   log_stream << "h" << std::setw(2) << etam << "m";
@@ -430,7 +429,7 @@ void FastText::skipgram(Model& model, real lr,
   }
 }
 
-std::tuple<int64_t, double, double> FastText::test(
+std::tuple<uint64_t, double, double, double> FastText::test(
     std::istream& in,
     int32_t k,
     real threshold) {
@@ -442,6 +441,7 @@ std::tuple<int64_t, double, double> FastText::test(
 
   int32_t nexamples = 0, nlabels = 0, npredictions = 0;
   double precision = 0.0;
+  std::unordered_set<int32_t> coverage;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
   while (in.peek() != EOF) {
@@ -455,6 +455,7 @@ std::tuple<int64_t, double, double> FastText::test(
       for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
         if (std::find(labels.begin(), labels.end(), it->second) != labels.end()) {
           precision += 1.0;
+          coverage.insert(it->second);
         }
       }
       nexamples++;
@@ -462,8 +463,8 @@ std::tuple<int64_t, double, double> FastText::test(
       npredictions += modelPredictions.size();
     }
   }
-  return std::tuple<int64_t, double, double>(
-      nexamples, precision / npredictions, precision / nlabels);
+  return std::tuple<uint64_t, double, double, double>(
+      nexamples, precision / npredictions, precision / nlabels, static_cast<double>(coverage.size())/ dict_->nlabels());
 }
 
 void FastText::predict(
@@ -762,7 +763,8 @@ void FastText::train(const Args args) {
   }
 
   if (args_->verbose > 2)
-    std::cerr << "  Input: " << input_->rows() << " x " << input_->cols() << "\n";
+    std::cerr << "  Input: " << input_->rows() << " x " << input_->cols()
+              << " (" << input_->size() * sizeof(real) / 1024 / 1024 << "M)\n";
 
   if (args_->verbose > 2)
     std::cerr << "Setting up loss layer ...\n";
@@ -782,7 +784,8 @@ void FastText::train(const Args args) {
   output_->zero();
 
   if (args_->verbose > 2)
-    std::cerr << "  Output: " << output_->rows() << " x " << output_->cols() << "\n";
+    std::cerr << "  Output: " << output_->rows() << " x " << output_->cols()
+              << " (" << output_->size() * sizeof(real) / 1024 / 1024 << "M)\n";
 
   startThreads();
   model_ = std::make_shared<Model>(input_, output_, args_, lossLayer_, 0);

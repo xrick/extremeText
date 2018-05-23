@@ -49,6 +49,7 @@ struct NodePLT{
   float p; // probability
 
   bool operator < (const NodePLT& r) const { return p < r.p; }
+  bool operator > (const NodePLT& r) const { return p > r.p; }
 };
 
 struct NodeFrequency{
@@ -67,11 +68,10 @@ private:
     bool prob_norm;
     bool neg_sample;
 
-    int n_in_vis_count;
-    int n_vis_count;
-    int y_count;
-    int x_count;
-    int ndocs;
+    uint64_t n_in_vis_count;
+    uint64_t n_vis_count;
+    uint64_t y_count;
+    uint64_t x_count;
 
     NodePLT *tree_root;
     std::vector<NodePLT*> tree; // pointers to tree nodes

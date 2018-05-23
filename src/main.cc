@@ -140,7 +140,7 @@ void test(const std::vector<std::string>& args) {
   FastText fasttext;
   fasttext.loadModel(args[2]);
 
-  std::tuple<int64_t, double, double> result;
+  std::tuple<int64_t, double, double, double> result;
   std::string infile = args[3];
   if (infile == "-") {
     result = fasttext.test(std::cin, k, threshold);
@@ -153,11 +153,11 @@ void test(const std::vector<std::string>& args) {
     result = fasttext.test(ifs, k, threshold);
     ifs.close();
   }
-  std::cout << "N" << "\t" << std::get<0>(result) << std::endl;
+  std::cout << "Number of documents: " << std::get<0>(result) << std::endl;
   std::cout << std::setprecision(5);
-  std::cout << "P@" << k << "\t" << std::get<1>(result) << std::endl;
-  std::cout << "R@" << k << "\t" << std::get<2>(result) << std::endl;
-  std::cerr << "Number of examples: " << std::get<0>(result) << std::endl;
+  std::cout << "P@" << k << ": " << std::get<1>(result) << std::endl;
+  std::cout << "R@" << k << ": " << std::get<2>(result) << std::endl;
+  std::cout << "C@" << k << ": " << std::get<3>(result) << std::endl;
 
   if (fasttext.getArgs().saveDocuments)
     fasttext.saveDocuments(args[3], args[2], "test");

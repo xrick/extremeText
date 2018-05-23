@@ -41,10 +41,11 @@ PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
     power_t = 0.5;
     base_lr = 1;
     separate_lr = false;
-    prob_norm = true;
-    neg_sample = 0;
+    //prob_norm = args->probNorm;
+    //neg_sample = args->neg;
     multilabel = true;
 
+    // Stats
     n_in_vis_count = 0;
     n_vis_count = 0;
     y_count = 0;
@@ -142,17 +143,16 @@ void PLT::buildCompletePLTree(int32_t k_) {
   tree_root = tree[0];
   tree_root->parent = nullptr;
 
-  std::cout << "   Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+  std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
 
 void PLT::loadTreeStructure(std::string filename){
-    std::cout << "Loading PLT structure from file ...\n";
+    std::cout << "  Loading PLT structure from file ...\n";
     std::ifstream treefile(filename);
 
     treefile >> k >> t;
 
-    for (auto i = 0; i < t; ++i)
-        NodePLT *n = createNode();
+    for (auto i = 0; i < t; ++i) NodePLT *n = createNode();
     tree_root = tree[0];
 
     for (auto i = 0; i < t - 1; ++i) {
@@ -177,7 +177,7 @@ void PLT::loadTreeStructure(std::string filename){
     }
     treefile.close();
 
-    std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+    std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
     assert(tree.size() == t);
     assert(tree_leaves.size() == k);
 }
@@ -191,36 +191,11 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     score = model_->sigmoid(score);
     real diff = (label - score);
 
-    /*
-    double lambda = 0.00001;
-    double gamma = 1.0;
-    double lr = gamma /(1.0 + gamma * lambda * n->n_updates);
-     */
-
     // Original update
     /*
     real alpha = lr * (label - score);
     model_->grad_.addRow(*model_->wo_, shift + n->n, (lr * diff) / args_->nbase)
     model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
-     */
-
-    // Labels' wieghts
-    /*
-    if(args_->labelsWeights && n->n_updates > ndocs){
-        if(n->minWeight == 0) {
-            uint32_t n_negative_updates = n->n_updates - n->n_positive_updates;
-            if (n_negative_updates && n->n_positive_updates) {
-                if (label && n_negative_updates > n->n_positive_updates) {
-                    n->minWeight = 1.0 + log(static_cast<double>(n_negative_updates) / n->n_positive_updates);
-                    n->minLabel = label;
-                }
-                else if (label == 0 && n->n_positive_updates > n_negative_updates) {
-                    n->minWeight = 1.0 + log(static_cast<double>(n->n_positive_updates) / n_negative_updates);
-                    n->minLabel = label;
-                }
-            }
-        } else if(label == n->minLabel) lr *= n->minWeight;
-    }
      */
 
     if(args_->fobos){
@@ -335,7 +310,7 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
 
         float cp = n->p;
 
-        if(!prob_norm) {
+        if(!args_->probNorm) {
             if (n->label < 0) {
                 float sumOfP = 0.0f;
                 for (auto child : n->children) {
@@ -357,7 +332,6 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
                 if (sumOfP < 1.0){ //&& (sumOfP > 10e-6)) {
                     for (auto child : n->children) {
                         child->p = child->p / sumOfP;
-
                     }
                 }
                 for (auto child : n->children){
@@ -380,7 +354,7 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     std::vector<NodePLT*> path;
     NodePLT *n = tree_leaves[label];
 
-    if(!prob_norm){
+    if(!args_->probNorm){
         while(n != tree_root)
             p *= predictNode(n, hidden, model_);
 
@@ -421,7 +395,6 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
 void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
     args_ = args;
-    ndocs = dict->ndocs();
     if(args_->treeStructure != ""){
         args_->treeType = tree_type_name::custom;
         loadTreeStructure(args_->treeStructure);

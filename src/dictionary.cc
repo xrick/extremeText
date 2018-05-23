@@ -298,9 +298,8 @@ void Dictionary::readFromFile(std::istream& in) {
   }
 }
 
-
-
 void Dictionary::threshold(int64_t t, int64_t tl) {
+  //std::cerr << "Removing words and labels under min count threshold ...\n";
   sort(words_.begin(), words_.end(), [](const entry& e1, const entry& e2) {
       if (e1.type != e2.type) return e1.type < e2.type;
       return e1.count > e2.count;
@@ -461,19 +460,19 @@ int32_t Dictionary::getLine(std::istream& in,
 //    it = it / values_sum * words.size();
 //  }
 
-  if(words.size()) {
-    words.pop_back();
-    words_values.pop_back();
-  }
+//  if(words.size()) {
+//    words.pop_back();
+//    words_values.pop_back();
+//  }
 
   // Unit Norm
-  if(args_->unitNorm && words_values.size()) {
-    real norm = 0;
-    for(const auto& i : words_values) norm += i * i;
-    norm = std::sqrt(norm);
-    if(norm == 0) norm = 1;
-    for(auto& i : words_values) i /= norm;
-  }
+//  if(args_->unitNorm && words_values.size()) {
+//    real norm = 0;
+//    for(const auto& i : words_values) norm += i * i;
+//    norm = std::sqrt(norm);
+//    if(norm == 0) norm = 1;
+//    for(auto& i : words_values) i /= norm;
+//  }
 
   assert(words.size() == words_values.size());
 
