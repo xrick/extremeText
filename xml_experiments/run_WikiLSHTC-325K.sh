@@ -2,7 +2,7 @@
 
 DATASET_NAME="WikiLSHTC-325K"
 FILES_PREFIX="wikiLSHTC"
-PARAMS="-lr 0.07 -epoch 20 -arity 16 -dim 1000"
+PARAMS="-lr 0.07 -epoch 20 -arity 16 -dim 500 -l2 0.0001 -wordsWeights"
 
 bash run_xml.sh $DATASET_NAME $FILES_PREFIX "$PARAMS"
 

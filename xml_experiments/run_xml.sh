@@ -3,6 +3,9 @@
 DATASET_NAME=$1
 FILES_PREFIX=$2
 PARAMS=$3
+QUANTIZE_PARAMS=$4
+
+THREADS=8
 
 mkdir -p models
 
@@ -31,13 +34,36 @@ if [ ! -e $TRAIN ]; then
     TEST=${FILES_PREFIX}/${FILES_PREFIX}_test0
 fi
 
+# Model traning
+
 mkdir -p models
 MODEL="models/${FILES_PREFIX}_$(echo $PARAMS | tr ' ' '_')"
 
 if [ ! -e ${MODEL}.bin ]; then
-    $BIN supervised -input ${TRAIN} -output $MODEL -loss plt $PARAMS -thread 4
+    time $BIN supervised -input $TRAIN -output $MODEL -loss plt $PARAMS -thread $THREADS
 fi
 
-$BIN test ${MODEL}.bin ${TEST} 1
-$BIN test ${MODEL}.bin ${TEST} 3
-$BIN test ${MODEL}.bin ${TEST} 5
+time $BIN test ${MODEL}.bin ${TEST} 1
+time $BIN test ${MODEL}.bin ${TEST} 3
+time $BIN test ${MODEL}.bin ${TEST} 5
+
+echo "Model: ${MODEL}.bin"
+echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)"
+
+# Model quantization
+
+#if [ ! -e ${MODEL}.ftz ]; then
+#    time $BIN quantize -output $MODEL -input $TRAIN -thread $THREADS $QUANTIZE_PARAMS
+#fi
+#
+#time $BIN test ${MODEL}.ftz ${TEST} 1
+#time $BIN test ${MODEL}.ftz ${TEST} 3
+#time $BIN test ${MODEL}.ftz ${TEST} 5
+#
+#echo "Quantized model: ${MODEL}.ftz"
+#echo "Quantized model size: $(ls -lh ${MODEL}.ftz | grep -E '[0-9\.,]+[BMG]' -o)"
+
+# Saving model
+
+#$BIN save-all ${MODEL}.bin ${TRAIN} train
+#$BIN save-all ${MODEL}.bin ${TEST} test
