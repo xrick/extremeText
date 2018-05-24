@@ -10,6 +10,7 @@
 #include "utils.h"
 
 #include <ios>
+#include <thread>
 
 namespace fasttext {
 
@@ -23,6 +24,10 @@ namespace utils {
   void seek(std::ifstream& ifs, int64_t pos) {
     ifs.clear();
     ifs.seekg(std::streampos(pos));
+  }
+
+  size_t cpuCount(){
+    return std::thread::hardware_concurrency();
   }
 }
 

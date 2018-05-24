@@ -194,6 +194,27 @@ void predict(const std::vector<std::string>& args) {
     ifs.close();
   }
 
+  exit(0);
+}
+
+void getProb(const std::vector<std::string>& args){
+  //TODO: Add usage
+
+  FastText fasttext;
+  fasttext.loadModel(std::string(args[2]));
+  std::string infile(args[3]);
+
+  if (infile == "-") {
+    fasttext.getProb(std::cin);
+  } else {
+    std::ifstream ifs(infile);
+    if (!ifs.is_open()) {
+      std::cerr << "Input file cannot be opened!" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    fasttext.getProb(ifs);
+    ifs.close();
+  }
 
   exit(0);
 }
@@ -380,6 +401,8 @@ int main(int argc, char** argv) {
     analogies(args);
   } else if (command == "predict" || command == "predict-prob") {
     predict(args);
+  } else if (command == "get-prob") {
+    getProb(args);
   } else if (command == "dump") {
     dump(args);
   } else if (command == "save-all") {

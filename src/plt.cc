@@ -24,25 +24,9 @@
 
 namespace fasttext {
 
-bool compare_node_ptr_func(const NodePLT* l, const NodePLT* r) { return (*l < *r); }
-
-struct compare_node_ptr_functor{
-    bool operator()(const NodePLT* l, const NodePLT* r) const { return (*l < *r); }
-};
-
-bool compare_node_freq_ptr_func(const NodeFrequency* l, const NodeFrequency* r) { return (*l > *r); }
-
-struct compare_node_freq_ptr_functor{
-    bool operator()(const NodeFrequency* l, const NodeFrequency* r) const { return (*l > *r); }
-};
-
+// Comperators for priority queues
 
 PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
-    power_t = 0.5;
-    base_lr = 1;
-    separate_lr = false;
-    //prob_norm = args->probNorm;
-    //neg_sample = args->neg;
     multilabel = true;
 
     // Stats
@@ -64,20 +48,18 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
     k = freq.size();
     t = 2 * k - 1; // size of the tree
 
-    std::priority_queue<NodeFrequency*, std::vector<NodeFrequency*>, compare_node_freq_ptr_functor> freqheap;
+    std::priority_queue<NodeFreq, std::vector<NodeFreq>, std::less<NodeFreq>> freqheap;
     for(int i = 0; i < k; ++i) {
         NodePLT *n = createNode(nullptr, i);
-        NodeFrequency* f = new NodeFrequency();
-        *f = {n, freq[i]};
-        freqheap.push(f);
+        freqheap.push({n, freq[i]});
 
         //std::cout << "Leaf: " << n->label << ", Node: " << n->n << ", Freq: " << freq[i] << "\n";
     }
 
     while (true) {
-        std::vector<NodeFrequency *> toMerge;
+        std::vector<NodeFreq> toMerge;
         for (int a = 0; a < args_->arity; ++a) {
-            NodeFrequency *tmp = freqheap.top();
+            NodeFreq tmp = freqheap.top();
             freqheap.pop();
             toMerge.push_back(tmp);
             if (freqheap.empty()) break;
@@ -86,11 +68,10 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
         NodePLT *parent = createNode();
 
         int64_t aggregatedFrequency = 0;
-        for (NodeFrequency *e : toMerge) {
-            e->node->parent = parent;
-            parent->children.push_back(e->node);
-            aggregatedFrequency += e->frequency;
-            delete e;
+        for (NodeFreq e : toMerge) {
+            e.node->parent = parent;
+            parent->children.push_back(e.node);
+            aggregatedFrequency += e.freq;
         }
 
         if (freqheap.empty()) {
@@ -99,9 +80,7 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
             break;
         }
 
-        NodeFrequency *tup = new NodeFrequency();
-        *tup = {parent, aggregatedFrequency};
-        freqheap.push(tup);
+        freqheap.push({parent, aggregatedFrequency});
     }
 
     t = tree.size();
@@ -135,7 +114,7 @@ void PLT::buildCompletePLTree(int32_t k_) {
     }
 
     if(i > 0){
-      n->parent = tree[static_cast<int>(floor(static_cast<float>(n->n - 1) / args_->arity))];
+      n->parent = tree[static_cast<int>(floor(static_cast<float>(n->index - 1) / args_->arity))];
       n->parent->children.push_back(n);
     }
   }
@@ -184,8 +163,8 @@ void PLT::loadTreeStructure(std::string filename){
 
 real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
 
-    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->n));
-    real score = model_->wo_->dotRow(model_->hidden_, shift + n->n);
+    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->index));
+    real score = model_->wo_->dotRow(model_->hidden_, shift + n->index);
     if(score > MAX_SIGMOID) score = MAX_SIGMOID;
     else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
     score = model_->sigmoid(score);
@@ -194,16 +173,16 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     // Original update
     /*
     real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + n->n, (lr * diff) / args_->nbase)
-    model_->wo_->addRow(model_->hidden_, shift + n->n, alpha);
+    model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->nbase)
+    model_->wo_->addRow(model_->hidden_, shift + n->index, alpha);
      */
 
     if(args_->fobos){
-        model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->n, lr, diff / args_->nbase, l2);
-        model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->n, lr, diff, l2);
+        model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->index, lr, diff / args_->nbase, l2);
+        model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->index, lr, diff, l2);
     } else {
-        model_->grad_.addRowL2(*model_->wo_, shift + n->n, lr, diff / args_->nbase, l2);
-        model_->wo_->addRowL2(model_->hidden_, shift + n->n, lr, diff, l2);
+        model_->grad_.addRowL2(*model_->wo_, shift + n->index, lr, diff / args_->nbase, l2);
+        model_->wo_->addRowL2(model_->hidden_, shift + n->index, lr, diff, l2);
     }
 
     if(n->label < 0) ++n_in_vis_count;
@@ -221,12 +200,12 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
 real PLT::predictNode(NodePLT *n, Vector& hidden, const Model *model_){
     if(n->n_updates == 0 || n->n_positive_updates == 0) return 0;
     else if(n->n_positive_updates == n->n_updates) return 1;
-    else return model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->n));
+    else return model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->index));
 }
 
 NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
     NodePLT *n = new NodePLT();
-    n->n = tree.size();
+    n->index = tree.size();
     n->label = label;
     n->parent = parent;
     n->n_updates = 0;
@@ -299,47 +278,43 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
 
     std::vector<NodePLT*> best_labels, found_leaves;
-    std::priority_queue<NodePLT*, std::vector<NodePLT*>, compare_node_ptr_functor> n_queue;
+    std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
 
-    tree_root->p = predictNode(tree_root, hidden, model_);
-    n_queue.push(tree_root);
+    n_queue.push({tree_root, predictNode(tree_root, hidden, model_)});
 
     while (!n_queue.empty()) {
-        NodePLT *n = n_queue.top(); // current node
+        NodeProb np = n_queue.top(); // current node
         n_queue.pop();
 
-        float cp = n->p;
-
         if(!args_->probNorm) {
-            if (n->label < 0) {
-                float sumOfP = 0.0f;
-                for (auto child : n->children) {
-                    child->p = cp * predictNode(child, hidden, model_);
-                    n_queue.push(child);
-                }
+            if (np.node->label < 0) {
+                for (auto& child : np.node->children)
+                    n_queue.push({child, np.prob * predictNode(child, hidden, model_)});
             } else {
-                heap.push_back(std::make_pair(n->p, n->label));
+                heap.push_back({np.prob, np.node->label});
                 if (heap.size() >= top_k)
                     break;
             }
         } else {
-            if (n->label < 0) {
+            if (np.node->label < 0) {
                 float sumOfP = 0.0f;
-                for (auto child : n->children) {
-                    child->p = predictNode(child, hidden, model_);
-                    sumOfP += child->p;
+                std::vector<NodeProb> normChildren;
+                for (auto& child : np.node->children) {
+                    real p = predictNode(child, hidden, model_);
+                    normChildren.push_back({child, p});
+                    sumOfP += p;
                 }
                 if (sumOfP < 1.0){ //&& (sumOfP > 10e-6)) {
-                    for (auto child : n->children) {
-                        child->p = child->p / sumOfP;
+                    for (auto& child : normChildren) {
+                        child.prob = child.prob / sumOfP;
                     }
                 }
-                for (auto child : n->children){
-                    child->p *= cp;
+                for (auto& child : normChildren){
+                    child.prob *= np.prob;
                     n_queue.push(child);
                 }
             } else {
-                heap.push_back(std::make_pair(n->p, n->label));
+                heap.push_back({np.prob, np.node->label});
                 if (heap.size() >= top_k)
                     break;
             }
@@ -355,9 +330,10 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     NodePLT *n = tree_leaves[label];
 
     if(!args_->probNorm){
-        while(n != tree_root)
+        while(n->parent) {
             p *= predictNode(n, hidden, model_);
-
+            n = n->parent;
+        }
         return p;
     }
 
@@ -370,27 +346,28 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     assert(tree_root == n);
     assert(tree_root == path.back());
 
-    tree_root->p = predictNode(tree_root, hidden, model_);
+    p = predictNode(tree_root, hidden, model_);
     for(auto n = path.rbegin(); n != path.rend(); ++n){
-        float cp = (*n)->p;
-
         if ((*n)->label < 0) {
-            float sumOfP = 0.0f;
+
+            //TODO: rewrite
+            /*
             for (auto child : (*n)->children) {
+                normChildren.push_back({child, })
                 child->p = cp * predictNode(child, hidden, model_);
                 sumOfP += child->p;
             }
-            if ((sumOfP < cp) && (sumOfP > 10e-6)) {
+            if ((sumOfP < cp) //&& (sumOfP > 10e-6)) {
                 for (auto child : (*n)->children) {
                     child->p = (child->p * cp) / sumOfP;
                 }
             }
+            float sumOfP = 0.0f;
+             */
         }
     }
 
-    assert(tree_root == n);
-
-    return path.front()->p;
+    return p;
 }
 
 void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
@@ -430,20 +407,20 @@ void PLT::save(std::ostream& out){
     out.write((char*) &t, sizeof(t));
     for(size_t i = 0; i < t; ++i) {
         NodePLT *n = tree[i];
-        out.write((char*) &n->n, sizeof(n->n));
+        out.write((char*) &n->index, sizeof(n->index));
         out.write((char*) &n->label, sizeof(n->label));
         out.write((char*) &n->n_updates, sizeof(n->n_updates));
         out.write((char*) &n->n_positive_updates, sizeof(n->n_positive_updates));
     }
 
-    uint32_t root_n = tree_root->n;
+    uint32_t root_n = tree_root->index;
     out.write((char*) &root_n, sizeof(root_n));
 
     for(size_t i = 0; i < t; ++i) {
         NodePLT *n = tree[i];
 
         int parent_n;
-        if(n->parent) parent_n = n->parent->n;
+        if(n->parent) parent_n = n->parent->index;
         else parent_n = -1;
 
         out.write((char*) &parent_n, sizeof(parent_n));
@@ -461,7 +438,7 @@ void PLT::load(std::istream& in){
     tree.resize(t);
     for(size_t i = 0; i < t; ++i) {
         NodePLT *n = new NodePLT();
-        in.read((char*) &n->n, sizeof(n->n));
+        in.read((char*) &n->index, sizeof(n->index));
         in.read((char*) &n->label, sizeof(n->label));
         in.read((char*) &n->n_updates, sizeof(n->n_updates));
         in.read((char*) &n->n_positive_updates, sizeof(n->n_positive_updates));

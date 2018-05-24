@@ -105,6 +105,7 @@ class FastText {
       int32_t,
       std::vector<std::pair<real, std::string>>&,
       real = 0.0) const;
+  void getProb(std::istream&);
   void ngramVectors(std::string);
   void precomputeWordVectors(Matrix&);
   void findNN(

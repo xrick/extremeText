@@ -34,7 +34,7 @@ namespace fasttext {
 class Model;
 
 struct NodePLT{
-  uint32_t n; //id of the base predictor
+  uint32_t index; //id of the base predictor
   int32_t label;
   NodePLT* parent; // pointer to the parent node
   std::vector<NodePLT*> children; // pointers to the children nodes
@@ -42,31 +42,28 @@ struct NodePLT{
   // training
   uint32_t n_updates;
   uint32_t n_positive_updates;
-  //real minWeight;
-  //real minLabel;
-
-  // prediction
-  float p; // probability
-
-  bool operator < (const NodePLT& r) const { return p < r.p; }
-  bool operator > (const NodePLT& r) const { return p > r.p; }
 };
 
-struct NodeFrequency{
+struct NodeFreq{
   NodePLT* node;
-  int64_t frequency;
+  int64_t freq; // frequency
 
-  bool operator<(const NodeFrequency& r) const { return frequency < r.frequency; }
-  bool operator>(const NodeFrequency& r) const { return frequency > r.frequency; }
+  bool operator<(const NodeFreq& r) const { return freq < r.freq; }
+  bool operator>(const NodeFreq& r) const { return freq > r.freq; }
+};
+
+struct NodeProb{
+  NodePLT* node;
+  real prob; // probability
+
+  bool operator<(const NodeProb& r) const { return prob < r.prob; }
+  bool operator>(const NodeProb& r) const { return prob > r.prob; }
 };
 
 class PLT: public LossLayer{
 private:
     uint32_t k; // number of labels
     uint32_t t; // number of tree nodes
-    bool separate_lr;
-    bool prob_norm;
-    bool neg_sample;
 
     uint64_t n_in_vis_count;
     uint64_t n_vis_count;

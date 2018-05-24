@@ -114,6 +114,11 @@ class Dictionary {
                     std::vector<int32_t>&,
                     std::vector<real>&,
                     std::vector<int32_t>&) const;
+    int32_t getLine(std::istream&,
+                    std::vector<int32_t>&,
+                    std::vector<real>&,
+                    std::vector<int32_t>&,
+                    std::vector<std::string>&) const;
     int32_t getLineTfIdf(std::istream&,
                   std::vector<int32_t>&,
                   std::vector<real>&,

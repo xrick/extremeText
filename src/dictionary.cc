@@ -395,7 +395,6 @@ void Dictionary::reset(std::istream& in) const {
 
 int32_t Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
-                            //std::vector<real>& words_values,
                             std::minstd_rand& rng) const {
   std::uniform_real_distribution<> uniform(0, 1);
   std::string token;
@@ -404,7 +403,6 @@ int32_t Dictionary::getLine(std::istream& in,
 
   reset(in);
   words.clear();
-  //words_values.clear();
   while (readWord(in, token, value)) {
     int32_t h = find(token);
     int32_t wid = word2int_[h];
@@ -413,7 +411,6 @@ int32_t Dictionary::getLine(std::istream& in,
     ntokens++;
     if (getType(wid) == entry_type::word && !discard(wid, uniform(rng))) {
       words.push_back(wid);
-      //words_values.push_back(value);
     }
     if (ntokens > MAX_LINE_SIZE || token == EOS) break;
   }
@@ -424,6 +421,17 @@ int32_t Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
                             std::vector<real>& words_values,
                             std::vector<int32_t>& labels) const {
+
+  std::vector<std::string> tags;
+  return getLine(in, words, words_values, labels, tags);
+
+}
+
+int32_t Dictionary::getLine(std::istream& in,
+                            std::vector<int32_t>& words,
+                            std::vector<real>& words_values,
+                            std::vector<int32_t>& labels,
+                            std::vector<std::string>& tags) const {
   std::vector<int32_t> word_hashes;
   std::string token;
   real value;
@@ -433,7 +441,13 @@ int32_t Dictionary::getLine(std::istream& in,
   words.clear();
   labels.clear();
   words_values.clear();
+  tags.clear();
   while (readWord(in, token, value)) {
+    if(token[0] == '#') {
+      tags.push_back(token);
+      continue;
+    }
+
     uint32_t h = hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
@@ -449,30 +463,30 @@ int32_t Dictionary::getLine(std::istream& in,
   }
 
   //TODO: add support for word ngrams
-//  addWordNgrams(words, word_hashes, args_->wordNgrams);
-//  while(words.size() != words_values.size())
-//    words_values.push_back(1);
+  /*
+  addWordNgrams(words, word_hashes, args_->wordNgrams);
+  while(words.size() != words_values.size())
+    words_values.push_back(1);
+   */
 
-//  real values_sum = 0;
-//  for(auto &it : words_values)
-//    values_sum += it;
-//  for(auto &it : words_values){
-//    it = it / values_sum * words.size();
-//  }
-
-//  if(words.size()) {
-//    words.pop_back();
-//    words_values.pop_back();
-//  }
+  // Pop bias word
+  /*
+  if(words.size()) {
+    words.pop_back();
+    words_values.pop_back();
+  }
+   */
 
   // Unit Norm
-//  if(args_->unitNorm && words_values.size()) {
-//    real norm = 0;
-//    for(const auto& i : words_values) norm += i * i;
-//    norm = std::sqrt(norm);
-//    if(norm == 0) norm = 1;
-//    for(auto& i : words_values) i /= norm;
-//  }
+  /*
+  if(args_->unitNorm && words_values.size()) {
+    real norm = 0;
+    for(const auto& i : words_values) norm += i * i;
+    norm = std::sqrt(norm);
+    if(norm == 0) norm = 1;
+    for(auto& i : words_values) i /= norm;
+  }
+   */
 
   assert(words.size() == words_values.size());
 

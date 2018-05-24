@@ -307,7 +307,6 @@ void FastText::printInfo(real progress, real loss, std::ostream& log_stream) {
   // clock_t might also only be 32bits wide on some systems
   double t = double(clock() - start_) / double(CLOCKS_PER_SEC);
   double lr = args_->lr * (1.0 - progress);
-  double l2 = args_->l2;
   double wst = 0;
   int64_t eta = 720 * 3600; // Default to one month
   if (progress > 0 && t >= 0) {
@@ -475,11 +474,9 @@ void FastText::predict(
 ) const {
   std::vector<int32_t> words, labels;
   std::vector<real> words_values;
-  predictions.clear();
-  if(args_->tfidf)
-    dict_->getLineTfIdf(in, words, words_values, labels);
-  else
-    dict_->getLine(in, words, words_values, labels);
+  if(args_->tfidf) dict_->getLineTfIdf(in, words, words_values, labels);
+  else dict_->getLine(in, words, words_values, labels);
+
   predictions.clear();
   if (words.empty()) return;
   Vector hidden(args_->dim);
@@ -511,9 +508,29 @@ void FastText::predict(
       }
       std::cout << it->second;
       if (print_prob) {
-        std::cout << " " << std::exp(it->first);
+        //std::cout << " " << std::exp(it->first);
+          std::cout << " " << it->first;
       }
     }
+    std::cout << std::endl;
+  }
+}
+
+void FastText::getProb(std::istream& in){
+  std::vector<int32_t> words, labels;
+  std::vector<real> words_values;
+  std::vector<std::string> tags;
+  while (in.peek() != EOF) {
+    if (args_->tfidf) dict_->getLineTfIdf(in, words, words_values, labels); //TODO: upgrade TfIdf
+    else dict_->getLine(in, words, words_values, labels, tags);
+
+    for (auto l = labels.cbegin(); l != labels.cend(); l++) {
+        if(l != labels.cbegin()) std::cout << " ";
+        real p = model_->getProb(words, words_values, *l);
+        std::cout << dict_->getLabel(*l) << " " << p;
+    }
+
+    for (auto &t : tags) std::cout << " " << t;
     std::cout << std::endl;
   }
 }

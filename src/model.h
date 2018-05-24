@@ -84,6 +84,7 @@ class Model {
                  Vector&, Vector&) const;
     void predict(const std::vector<int32_t>&, const std::vector<real>&,
                  int32_t, real, std::vector<std::pair<real, int32_t>>&);
+    real getProb(const std::vector<int32_t>&, const std::vector<real>&, int32_t);
     void dfs(int32_t, real, int32_t, real,
              std::vector<std::pair<real, int32_t>>&,
              Vector&) const;

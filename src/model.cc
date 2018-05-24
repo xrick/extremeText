@@ -176,7 +176,7 @@ void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& 
   } else {
     findKBest(k, threshold, heap, hidden, output);
   }
-  std::sort_heap(heap.begin(), heap.end(), comparePairs);
+  std::sort(heap.begin(), heap.end(), comparePairs);
 }
 
 void Model::predict(
@@ -208,6 +208,16 @@ void Model::findKBest(
       heap.pop_back();
     }
   }
+}
+
+real Model::getProb(const std::vector<int32_t>& input, const std::vector<real>& input_values, int32_t target){
+  if (input.size() == 0) return 0;
+  hidden_.zero();
+  computeHidden(input, input_values, hidden_);
+  if (lossLayer_ != nullptr){
+    real p = lossLayer_->getLabelP(target, hidden_, this);
+    return p;
+  } else throw "Only lossLayers support getProb!";
 }
 
 void Model::dfs(int32_t k, real threshold, int32_t node, real score,

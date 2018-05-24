@@ -11,6 +11,6 @@
 
 namespace fasttext {
 
-typedef double real;
+typedef float real;
 
 }
