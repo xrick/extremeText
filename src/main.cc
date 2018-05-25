@@ -128,6 +128,7 @@ void test(const std::vector<std::string>& args) {
     printTestUsage();
     exit(EXIT_FAILURE);
   }
+
   int32_t k = 1;
   real threshold = 0.0;
   if (args.size() > 4) {
@@ -168,6 +169,7 @@ void predict(const std::vector<std::string>& args) {
     printPredictUsage();
     exit(EXIT_FAILURE);
   }
+
   int32_t k = 1;
   real threshold = 0.0;
   if (args.size() > 4) {

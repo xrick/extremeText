@@ -8,6 +8,7 @@
  */
 
 #include "fasttext.h"
+#include "threads.h"
 
 #include <iostream>
 #include <sstream>
@@ -516,18 +517,20 @@ void FastText::predict(
   }
 }
 
-void FastText::getProb(std::istream& in){
+void FastText::getProb(std::istream& in) {
   std::vector<int32_t> words, labels;
   std::vector<real> words_values;
   std::vector<std::string> tags;
+  Vector hidden(args_->dim);
   while (in.peek() != EOF) {
     if (args_->tfidf) dict_->getLineTfIdf(in, words, words_values, labels); //TODO: upgrade TfIdf
     else dict_->getLine(in, words, words_values, labels, tags);
 
+    model_->computeHidden(words, words_values, hidden);
     for (auto l = labels.cbegin(); l != labels.cend(); l++) {
-        if(l != labels.cbegin()) std::cout << " ";
-        real p = model_->getProb(words, words_values, *l);
-        std::cout << dict_->getLabel(*l) << " " << p;
+      if (l != labels.cbegin()) std::cout << " ";
+      real p = model_->getProb(hidden, *l);
+      std::cout << dict_->getLabel(*l) << " " << p;
     }
 
     for (auto &t : tags) std::cout << " " << t;
