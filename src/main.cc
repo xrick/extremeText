@@ -205,6 +205,10 @@ void getProb(const std::vector<std::string>& args){
   FastText fasttext;
   fasttext.loadModel(std::string(args[2]));
   std::string infile(args[3]);
+  std::string outfile(args[4]);
+  int32_t thread = utils::cpuCount();
+  if(args.size() >= 6)
+      thread = std::stoi(args[5]);
 
   if (infile == "-") {
     fasttext.getProb(std::cin);
@@ -214,7 +218,7 @@ void getProb(const std::vector<std::string>& args){
       std::cerr << "Input file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    fasttext.getProb(ifs);
+    fasttext.startGetProbThreads(infile, outfile, thread);
     ifs.close();
   }
 
