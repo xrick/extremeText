@@ -34,7 +34,7 @@ if [ ! -e $TRAIN ]; then
     TEST=${FILES_PREFIX}/${FILES_PREFIX}_test0
 fi
 
-# Model traning
+# Model training
 
 mkdir -p models
 MODEL="models/${FILES_PREFIX}_$(echo $PARAMS | tr ' ' '_')"
@@ -43,6 +43,7 @@ if [ ! -e ${MODEL}.bin ]; then
     time $BIN supervised -input $TRAIN -output $MODEL -loss plt $PARAMS -thread $THREADS
 fi
 
+# Test model
 time $BIN test ${MODEL}.bin ${TEST} 1
 time $BIN test ${MODEL}.bin ${TEST} 3
 time $BIN test ${MODEL}.bin ${TEST} 5
@@ -51,7 +52,6 @@ echo "Model: ${MODEL}.bin"
 echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)"
 
 # Model quantization
-
 #if [ ! -e ${MODEL}.ftz ]; then
 #    time $BIN quantize -output $MODEL -input $TRAIN -thread $THREADS $QUANTIZE_PARAMS
 #fi
@@ -63,7 +63,10 @@ echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)"
 #echo "Quantized model: ${MODEL}.ftz"
 #echo "Quantized model size: $(ls -lh ${MODEL}.ftz | grep -E '[0-9\.,]+[BMG]' -o)"
 
-# Saving model
-
+# Saving documents
 #$BIN save-all ${MODEL}.bin ${TRAIN} train
 #$BIN save-all ${MODEL}.bin ${TEST} test
+
+# Get probabilities
+time $BIN get-prob ${MODEL}.bin ${TEST} ${MODEL}_test.prob
+
