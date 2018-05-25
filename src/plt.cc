@@ -48,7 +48,7 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
     k = freq.size();
     t = 2 * k - 1; // size of the tree
 
-    std::priority_queue<NodeFreq, std::vector<NodeFreq>, std::less<NodeFreq>> freqheap;
+    std::priority_queue<NodeFreq, std::vector<NodeFreq>, std::greater<NodeFreq>> freqheap;
     for(int i = 0; i < k; ++i) {
         NodePLT *n = createNode(nullptr, i);
         freqheap.push({n, freq[i]});
