@@ -10,6 +10,7 @@
 #pragma once
 
 #include <fstream>
+#include <string>
 
 #if defined(__clang__) || defined(__GNUC__)
 # define FASTTEXT_DEPRECATED(msg) __attribute__((__deprecated__(msg)))
@@ -26,6 +27,7 @@ namespace utils {
   int64_t size(std::ifstream&);
   void seek(std::ifstream&, int64_t);
   size_t cpuCount();
+  std::string itos(int32_t, int32_t = 0);
 }
 
 }

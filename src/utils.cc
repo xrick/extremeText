@@ -11,6 +11,8 @@
 
 #include <ios>
 #include <thread>
+#include <sstream>
+#include <iomanip>
 
 namespace fasttext {
 
@@ -28,6 +30,13 @@ namespace utils {
 
   size_t cpuCount(){
     return std::thread::hardware_concurrency();
+  }
+
+  std::string itos(int32_t number, int32_t leadingZeros){
+      std::stringstream ss;
+      if (leadingZeros != 0) ss << std::setw(leadingZeros) << std::setfill('0');
+      ss << number;
+      return ss.str();
   }
 }
 

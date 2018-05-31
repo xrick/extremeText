@@ -79,13 +79,19 @@ class Model {
     real hierarchicalSoftmax(int32_t, real);
     real softmax(int32_t, real);
 
+    // Predict
+    void predict(int32_t, real, std::vector<std::pair<real, int32_t>>&,
+                 Vector&, Vector&) const;
     void predict(const std::vector<int32_t>&, const std::vector<real>&,
                  int32_t, real, std::vector<std::pair<real, int32_t>>&,
                  Vector&, Vector&) const;
     void predict(const std::vector<int32_t>&, const std::vector<real>&,
                  int32_t, real, std::vector<std::pair<real, int32_t>>&);
+
+    // Get probability
     real getProb(Vector&, int32_t);
     real getProb(const std::vector<int32_t>&, const std::vector<real>&, Vector&, int32_t);
+
     void dfs(int32_t, real, int32_t, real,
              std::vector<std::pair<real, int32_t>>&,
              Vector&) const;

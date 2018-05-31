@@ -165,25 +165,30 @@ void test(const std::vector<std::string>& args) {
 }
 
 void predict(const std::vector<std::string>& args) {
-  if (args.size() < 4 || args.size() > 6) {
+  if (args.size() < 4 || args.size() > 8) {
     printPredictUsage();
     exit(EXIT_FAILURE);
   }
 
   int32_t k = 1;
   real threshold = 0.0;
-  if (args.size() > 4) {
+  std::string outfile = "";
+  int32_t thread = utils::cpuCount();
+  if (args.size() > 4)
     k = std::stoi(args[4]);
-    if (args.size() == 6) {
-      threshold = std::stof(args[5]);
-    }
-  }
+  if (args.size() > 5)
+    threshold = std::stof(args[5]);
+  if (args.size() > 6)
+    outfile = std::string(args[6]);
+  if (args.size() > 7)
+    thread = std::stoi(args[7]);
 
   bool print_prob = args[1] == "predict-prob";
   FastText fasttext;
   fasttext.loadModel(std::string(args[2]));
-
   std::string infile(args[3]);
+  (args[6]);
+
   if (infile == "-") {
     fasttext.predict(std::cin, k, print_prob, threshold);
   } else {
@@ -192,8 +197,9 @@ void predict(const std::vector<std::string>& args) {
       std::cerr << "Input file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    fasttext.predict(ifs, k, print_prob, threshold);
+    if(args.size() < 6) fasttext.predict(ifs, k, print_prob, threshold);
     ifs.close();
+    if(args.size() >= 6) fasttext.startPredictThreads(infile, outfile, thread, k, print_prob, threshold);
   }
 
   exit(0);
@@ -201,14 +207,20 @@ void predict(const std::vector<std::string>& args) {
 
 void getProb(const std::vector<std::string>& args){
   //TODO: Add usage
+  if (args.size() < 4 || args.size() > 6) {
+    //printPredictUsage();
+    exit(EXIT_FAILURE);
+  }
 
   FastText fasttext;
   fasttext.loadModel(std::string(args[2]));
   std::string infile(args[3]);
-  std::string outfile(args[4]);
+  std::string outfile = "";
   int32_t thread = utils::cpuCount();
-  if(args.size() >= 6)
-      thread = std::stoi(args[5]);
+  if(args.size() > 4)
+    outfile = std::string(args[4]);
+  if(args.size() > 5)
+    thread = std::stoi(args[5]);
 
   if (infile == "-") {
     fasttext.getProb(std::cin);
@@ -218,8 +230,9 @@ void getProb(const std::vector<std::string>& args){
       std::cerr << "Input file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    fasttext.startGetProbThreads(infile, outfile, thread);
+    if(args.size() < 4) fasttext.getProb(ifs);
     ifs.close();
+    if(args.size() >= 4) fasttext.startGetProbThreads(infile, outfile, thread);
   }
 
   exit(0);

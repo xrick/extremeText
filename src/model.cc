@@ -156,8 +156,7 @@ bool Model::comparePairs(const std::pair<real, int32_t> &l,
   return l.first > r.first;
 }
 
-void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& input_values,
-                    int32_t k, real threshold, std::vector<std::pair<real, int32_t>>& heap,
+void Model::predict(int32_t k, real threshold, std::vector<std::pair<real, int32_t>>& heap,
                     Vector& hidden, Vector& output) const {
   if (k <= 0) {
     throw std::invalid_argument("k needs to be 1 or higher!");
@@ -165,8 +164,6 @@ void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& 
   if (args_->model != model_name::sup) {
     throw std::invalid_argument("Model needs to be supervised for prediction!");
   }
-  heap.reserve(k + 1);
-  computeHidden(input, input_values, hidden);
 
   if (lossLayer_ != nullptr){
     lossLayer_->findKBest(k, heap, hidden, this);
@@ -177,6 +174,14 @@ void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& 
     findKBest(k, threshold, heap, hidden, output);
   }
   std::sort(heap.begin(), heap.end(), comparePairs);
+}
+
+void Model::predict(const std::vector<int32_t>& input, const std::vector<real>& input_values,
+                    int32_t k, real threshold, std::vector<std::pair<real, int32_t>>& heap,
+                    Vector& hidden, Vector& output) const {
+  heap.reserve(k + 1);
+  computeHidden(input, input_values, hidden);
+  predict(k, threshold, heap, hidden, output);
 }
 
 void Model::predict(
@@ -225,7 +230,6 @@ real Model::getProb(const std::vector<int32_t>& input, const std::vector<real>& 
     return p;
   } else throw "Only lossLayers support getProb!";
 }
-
 
 void Model::dfs(int32_t k, real threshold, int32_t node, real score,
                 std::vector<std::pair<real, int32_t>>& heap,

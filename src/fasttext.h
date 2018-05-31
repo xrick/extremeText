@@ -99,16 +99,23 @@ class FastText {
   void getSentenceVector(std::istream&, Vector&);
   void quantize(const Args);
   std::tuple<uint64_t, double, double, double> test(std::istream&, int32_t, real = 0.0);
+
+  // Predict and test commands
+  void startPredictThreads(std::string, std::string, int32_t, int32_t, bool, real);
+  void predictThread(int32_t, int32_t, std::string, std::string, int32_t, bool, real);
   void predict(std::istream&, int32_t, bool, real = 0.0);
   void predict(
       std::istream&,
       int32_t,
       std::vector<std::pair<real, std::string>>&,
       real = 0.0) const;
+
+  // Get prob command
   void getProb(std::istream&);
   void startGetProbThreads(std::string, std::string, int32_t);
-  void getProbThread(int32_t, std::string, std::string);
+  void getProbThread(int32_t, int32_t, std::string, std::string);
   void ngramVectors(std::string);
+
   void precomputeWordVectors(Matrix&);
   void findNN(
       const Matrix&,
