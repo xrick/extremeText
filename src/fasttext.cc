@@ -513,10 +513,12 @@ void FastText::predictThread(
     else dict_->getLine(ifs, words, words_values, labels, tags);
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
+    modelPredictions.clear();
+    seenLabels.clear();
+
     model_->computeHidden(words, words_values, hidden);
     model_->predict(k, threshold, modelPredictions, hidden, output);
 
-    seenLabels.clear();
     for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
       if(seenLabels.count(it->second)) continue;
 
