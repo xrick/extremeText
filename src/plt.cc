@@ -43,7 +43,8 @@ PLT::~PLT() {
 }
 
 void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
-    std::cout << "  Building PLT with Huffman tree ...\n";
+    if(args_->verbose > 2)
+        std::cout << "  Building PLT with Huffman tree ...\n";
 
     k = freq.size();
     t = 2 * k - 1; // size of the tree
@@ -88,7 +89,8 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
 }
 
 void PLT::buildCompletePLTree(int32_t k_) {
-  std::cout << "  Building PLT with complete tree ...\n";
+  if(args_->verbose > 2)
+    std::cout << "  Building PLT with complete tree ...\n";
 
   // Build complete tree
 
@@ -126,7 +128,8 @@ void PLT::buildCompletePLTree(int32_t k_) {
 }
 
 void PLT::loadTreeStructure(std::string filename){
-    std::cout << "  Loading PLT structure from file ...\n";
+    if(args_->verbose > 2)
+        std::cout << "  Loading PLT structure from file ...\n";
     std::ifstream treefile(filename);
 
     treefile >> k >> t;
@@ -156,7 +159,8 @@ void PLT::loadTreeStructure(std::string filename){
     }
     treefile.close();
 
-    std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+    if(args_->verbose > 2)
+        std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
     assert(tree.size() == t);
     assert(tree_leaves.size() == k);
 }
@@ -297,7 +301,7 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
             }
         } else {
             if (np.node->label < 0) {
-                float sumOfP = 0.0f;
+                real sumOfP = 0.0;
                 std::vector<NodeProb> normChildren;
                 for (auto& child : np.node->children) {
                     real p = predictNode(child, hidden, model_);
@@ -323,17 +327,19 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
 }
 
 real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
-    float p = 1.0;
-    float parentProb = -1.0f;
+    real p = 1.0;
+    real parentProb = -1.0f;
 
     std::vector<NodePLT*> path;
     NodePLT *n = tree_leaves[label];
 
     if(!args_->probNorm){
+        p = predictNode(n, hidden, model_);
         while(n->parent) {
-            p *= predictNode(n, hidden, model_);
             n = n->parent;
+            p = p * predictNode(n, hidden, model_);
         }
+        assert(n == tree_root);
         return p;
     }
 
@@ -461,6 +467,9 @@ void PLT::load(std::istream& in){
             n->parent = tree[parent_n];
         }
     }
+
+    if(args_->verbose > 2)
+        std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
 }
 
 }
