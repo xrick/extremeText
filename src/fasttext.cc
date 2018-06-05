@@ -503,7 +503,7 @@ void FastText::predictThread(
   std::vector<real> words_values;
   std::vector<std::string> tags;
 
-  std::unordered_set<int> seenLabels;
+//  std::unordered_set<int> seenLabels;
   std::vector<std::pair<real,int32_t>> modelPredictions;
   Vector hidden(args_->dim);
   Vector output(dict_->nlabels());
@@ -514,26 +514,26 @@ void FastText::predictThread(
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
     modelPredictions.clear();
-    seenLabels.clear();
+//    seenLabels.clear();
 
     model_->computeHidden(words, words_values, hidden);
     model_->predict(k, threshold, modelPredictions, hidden, output);
 
     for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
-      if(seenLabels.count(it->second)) continue;
+//      if(seenLabels.count(it->second)) continue;
 
       if (it != modelPredictions.cbegin()) ofs << " ";
       ofs << dict_->getLabel(it->second);
       if (print_prob) ofs << " " << it->first;
-      seenLabels.insert(it->second);
+//      seenLabels.insert(it->second);
     }
 
-    for (auto l = labels.cbegin(); l != labels.cend(); l++) {
-      if(seenLabels.count(*l)) continue;
-      ofs << " " << dict_->getLabel(*l);
-      if (print_prob) ofs << " " << model_->getProb(hidden, *l);
-      seenLabels.insert(*l);
-    }
+//    for (auto l = labels.cbegin(); l != labels.cend(); l++) {
+//      if(seenLabels.count(*l)) continue;
+//      ofs << " " << dict_->getLabel(*l);
+//      if (print_prob) ofs << " " << model_->getProb(hidden, *l);
+//      seenLabels.insert(*l);
+//    }
 
     for (auto &t : tags) ofs << " " << t;
     ofs << std::endl;
