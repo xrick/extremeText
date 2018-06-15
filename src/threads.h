@@ -17,6 +17,7 @@
 #include <functional>
 #include <stdexcept>
 
+namespace fasttext {
 
 // Simple pool of threads
 class ThreadPool {
@@ -136,4 +137,6 @@ inline void ThreadSet::joinAll(){
     for(auto &worker: workers)
         worker.join();
     workers.clear();
+}
+
 }

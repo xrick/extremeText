@@ -17,6 +17,7 @@
 namespace fasttext {
 
 Args::Args() {
+  seed = time(0);
   train = false;
   lr = 0.05;
   dim = 100;
@@ -66,6 +67,11 @@ Args::Args() {
   treeStructure = "";
   randomTree = false;
   probNorm = false;
+  maxLeaves = 100;
+
+  // KMeans
+  kMeansEps = 0.001;
+  kMeansBalanced = true;
 
   // Update args
   l2 = 0;
@@ -257,6 +263,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           treeType = tree_type_name::complete;
         } else if (args[ai + 1] == "huffman") {
           treeType = tree_type_name::huffman;
+        } else if (args[ai + 1] == "kmeans") {
+          treeType = tree_type_name::kmeans;
         } else {
           std::cout << "Unknown tree: " << args[ai] << std::endl;
           printHelp();

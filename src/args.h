@@ -20,7 +20,7 @@ namespace fasttext {
 
 enum class model_name : int { cbow = 1, sg, sup };
 enum class loss_name : int { hs = 1, ns, softmax, plt };
-enum class tree_type_name : int { huffman = 1, complete, custom};
+enum class tree_type_name : int { huffman = 1, complete, kmeans, custom};
 
 class Args {
   protected:
@@ -30,6 +30,7 @@ class Args {
 
   public:
     Args();
+    int seed;
     bool train;
     std::string input;
     std::string output;
@@ -76,6 +77,11 @@ class Args {
     tree_type_name treeType;
     std::string treeStructure;
     bool randomTree;
+    int maxLeaves;
+
+    // KMeans
+    double kMeansEps;
+    bool kMeansBalanced;
 
     // Update args
     bool fobos;

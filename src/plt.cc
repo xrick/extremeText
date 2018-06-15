@@ -18,9 +18,13 @@
 #include <list>
 #include <chrono>
 #include <random>
+#include <climits>
+#include <iomanip>
 
 #include "plt.h"
 #include "model.h"
+#include "threads.h"
+#include "utils.h"
 
 namespace fasttext {
 
@@ -126,10 +130,116 @@ void PLT::buildCompletePLTree(int32_t k_) {
 
   std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
+  
+NodePartition nodeKMeansThread(NodePartition nPart, SRMatrix<Feature>& labelsFeatures, std::shared_ptr<Args> args, int seed){
+  kMeans(nPart.partition, labelsFeatures, args->arity, args->kMeansEps, args->kMeansBalanced, seed);
+  return nPart;
+}
+  
+void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
+
+  // Build label's feature matrix
+  tree_root = createNode();
+  k = dict->nlabels();
+
+  SRMatrix<Feature> labelsFeatures;
+
+  {
+    std::cerr << "Reading documents ...\n";
+    std::ifstream ifs(args_->input);
+    std::vector<std::unordered_map<int, double>> tmpLabelsFeatures(k);
+    std::vector<int32_t> line, labels;
+    std::vector<real> line_values;
+
+    int i = 0;
+    while (ifs.peek() != EOF) {
+      utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
+      if (args_->tfidf)
+        dict->getLineTfIdf(ifs, line, line_values, labels);
+      else
+        dict->getLine(ifs, line, line_values, labels);
+
+      for(const auto& l : labels){
+        for(int i = 0; i < line.size(); ++i){
+          if (!tmpLabelsFeatures[l].count(line[i]))
+            tmpLabelsFeatures[l][line[i]] = 0;
+          tmpLabelsFeatures[l][line[i]] += line_values[i];
+        }
+      }
+    }
+    ifs.close();
+
+    std::cerr << "Computing labels' features matrix ...\n";
+
+    for(int l = 0; l < k; ++l){
+      utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
+      std::vector<Feature> labelFeatures;
+      for(const auto& f : tmpLabelsFeatures[l])
+        labelFeatures.push_back({f.first, f.second});
+      std::sort(labelFeatures.begin(), labelFeatures.end());
+      labelsFeatures.appendRow(labelFeatures);
+    }
+    labelsFeatures.unitNormRows();
+  }
+
+  // Prepare partitions
+  std::uniform_int_distribution<int> kMeansSeeder(0, INT_MAX);
+  auto partition = new std::vector<Assignation>(k);
+  for(int i = 0; i < k; ++i) (*partition)[i].index = i;
+
+  // Run clustering in parallel
+  ThreadPool tPool(args->thread);
+  std::vector<std::future<NodePartition>> results;
+
+  NodePartition rootPart = {tree_root, partition};
+  results.emplace_back(tPool.enqueue(nodeKMeansThread, rootPart, std::ref(labelsFeatures),
+                                     args, kMeansSeeder(rng)));
+
+  std::cerr << "Hierarchical K-Means clustering in " << args->thread << " threads ...\n";
+
+  for(int r = 0; r < results.size(); ++r) {
+    utils::printProgress(static_cast<float>(r)/results.size(), std::cerr);
+
+    // Enqueuing new clustering tasks in the main thread ensures determinism
+    NodePartition nPart = results[r].get();
+
+    // This needs to be done this way in case of imbalanced K-Means
+    auto partitions = new std::vector<Assignation>* [args->arity];
+    for (int i = 0; i < args->arity; ++i) partitions[i] = new std::vector<Assignation>();
+    for (auto a : *nPart.partition) partitions[a.value]->push_back({a.index, 0});
+
+    for (int i = 0; i < args->arity; ++i) {
+      if(partitions[i]->empty()) continue;
+      else if(partitions[i]->size() == 1){
+        createNode(nPart.node, partitions[i]->front().index);
+        delete partitions[i];
+        continue;
+      }
+
+      NodePLT *n = createNode(nPart.node);
+
+      if(partitions[i]->size() <= args->maxLeaves) {
+        //n->kNNNode = true;
+        for (const auto& a : *partitions[i]) createNode(n, a.index);
+        delete partitions[i];
+      } else {
+        NodePartition childPart = {n, partitions[i]};
+        results.emplace_back(tPool.enqueue(nodeKMeansThread, childPart, std::ref(labelsFeatures),
+                                           args, kMeansSeeder(rng)));
+      }
+    }
+
+    delete nPart.partition;
+  }
+
+  t = tree.size();
+  assert(k == tree_leaves.size());
+  std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+}
 
 void PLT::loadTreeStructure(std::string filename){
     if(args_->verbose > 2)
-        std::cout << "  Loading PLT structure from file ...\n";
+      std::cout << "  Loading PLT structure from file ...\n";
     std::ifstream treefile(filename);
 
     treefile >> k >> t;
@@ -138,32 +248,32 @@ void PLT::loadTreeStructure(std::string filename){
     tree_root = tree[0];
 
     for (auto i = 0; i < t - 1; ++i) {
-        int parent, child, label;
-        treefile >> parent >> child >> label;
+      int parent, child, label;
+      treefile >> parent >> child >> label;
 
-        if(parent == -1){
-            tree_root = tree[child];
-            --i;
-            continue;
-        }
+      if(parent == -1){
+        tree_root = tree[child];
+        --i;
+        continue;
+      }
 
-        NodePLT *parentN = tree[parent];
-        NodePLT *childN = tree[child];
-        parentN->children.push_back(childN);
-        childN->parent = parentN;
+      NodePLT *parentN = tree[parent];
+      NodePLT *childN = tree[child];
+      parentN->children.push_back(childN);
+      childN->parent = parentN;
 
-        if(label >= 0){
-            childN->label = label;
-            tree_leaves.insert(std::make_pair(childN->label, childN));
-        }
+      if(label >= 0){
+        childN->label = label;
+        tree_leaves.insert(std::make_pair(childN->label, childN));
+      }
     }
     treefile.close();
 
     if(args_->verbose > 2)
-        std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+      std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
     assert(tree.size() == t);
     assert(tree_leaves.size() == k);
-}
+  }
 
 real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
 
@@ -278,7 +388,6 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     return loss;
 }
 
-
 void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
 
     std::vector<NodePLT*> best_labels, found_leaves;
@@ -327,11 +436,10 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
 }
 
 real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
-    real p = 1.0;
-    real parentProb = -1.0f;
 
     std::vector<NodePLT*> path;
     NodePLT *n = tree_leaves[label];
+    real p = 1.0;
 
     if(!args_->probNorm){
         p = predictNode(n, hidden, model_);
@@ -377,30 +485,31 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 }
 
 void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
-    args_ = args;
-    if(args_->treeStructure != ""){
-        args_->treeType = tree_type_name::custom;
-        loadTreeStructure(args_->treeStructure);
-        return;
-    }
+  args_ = args;
+  rng.seed(args->seed);
+  if(args_->treeStructure != ""){
+    args_->treeType = tree_type_name::custom;
+    loadTreeStructure(args_->treeStructure);
+    return;
+  }
 
-    if (args_->treeType == tree_type_name::complete)
-        buildCompletePLTree(dict->nlabels());
-
-    else if (args_->treeType == tree_type_name::huffman){
-        buildHuffmanPLTree(dict->getCounts(entry_type::label));
-    }
+  if (args_->treeType == tree_type_name::complete)
+    buildCompletePLTree(dict->nlabels());
+  else if (args_->treeType == tree_type_name::huffman)
+    buildHuffmanPLTree(dict->getCounts(entry_type::label));
+  else if (args_->treeType == tree_type_name::kmeans)
+    buildKMeansPLTree(args, dict);
 }
 
 int32_t PLT::getSize(){
-    assert(t == tree.size());
-    return tree.size();
+  assert(t == tree.size());
+  return tree.size();
 }
 
 void PLT::printInfo(){
-    std::cout << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
-    std::cout << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
-    std::cout << "  Avg y: " << static_cast<float>(y_count) / x_count << "\n";
+  std::cout << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
+  std::cout << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
+  std::cout << "  Avg y: " << static_cast<float>(y_count) / x_count << "\n";
 }
 
 void PLT::save(std::ostream& out){

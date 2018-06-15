@@ -38,6 +38,14 @@ namespace utils {
       ss << number;
       return ss.str();
   }
+
+  void printProgress(float progress, std::ostream& log_stream) {
+    progress = progress * 100;
+    log_stream << std::fixed;
+    log_stream << "Progress: ";
+    log_stream << std::setprecision(1) << std::setw(5) << progress << "%\r";
+    log_stream << std::flush;
+  }
 }
 
 }

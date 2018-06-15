@@ -28,6 +28,8 @@
 #include "real.h"
 #include "dictionary.h"
 #include "losslayer.h"
+#include "smatrix.h"
+#include "kmeans.h"
 
 namespace fasttext {
 
@@ -60,51 +62,61 @@ struct NodeProb{
   bool operator>(const NodeProb& r) const { return prob > r.prob; }
 };
 
+// For K-Means based trees
+
+struct NodePartition{
+  NodePLT* node;
+  std::vector<Assignation>* partition;
+};
+
 class PLT: public LossLayer{
-private:
-    uint32_t k; // number of labels
-    uint32_t t; // number of tree nodes
+ private:
+  std::default_random_engine rng;
 
-    uint64_t n_in_vis_count;
-    uint64_t n_vis_count;
-    uint64_t y_count;
-    uint64_t x_count;
+  uint32_t k; // number of labels
+  uint32_t t; // number of tree nodes
 
-    NodePLT *tree_root;
-    std::vector<NodePLT*> tree; // pointers to tree nodes
-    std::unordered_map<int32_t, NodePLT*> tree_leaves; // leaves map
+  uint64_t n_in_vis_count;
+  uint64_t n_vis_count;
+  uint64_t y_count;
+  uint64_t x_count;
 
-    real base_lr;
-    real power_t;
-    uint32_t *labels_nodes_map;
-    uint32_t *nodes_labels_map;
+  NodePLT *tree_root;
+  std::vector<NodePLT*> tree; // pointers to tree nodes
+  std::unordered_map<int32_t, NodePLT*> tree_leaves; // leaves map
 
-    Model *model_;
+  real base_lr;
+  real power_t;
+  uint32_t *labels_nodes_map;
+  uint32_t *nodes_labels_map;
 
-    real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
-    real predictNode(NodePLT *n, Vector& hidden, const Model *model_);
+  Model *model_;
 
-    void buildCompletePLTree(int32_t);
-    void buildHuffmanPLTree(const std::vector<int64_t>&);
-    void loadTreeStructure(std::string filename);
+  real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
+  real predictNode(NodePLT *n, Vector& hidden, const Model *model_);
 
-    NodePLT* createNode(NodePLT *parent = nullptr, int32_t label = -1);
+  void buildCompletePLTree(int32_t);
+  void buildHuffmanPLTree(const std::vector<int64_t>&);
+  void buildKMeansPLTree(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
+  void loadTreeStructure(std::string filename);
 
-public:
-    PLT(std::shared_ptr<Args> args);
-    ~PLT();
+  NodePLT* createNode(NodePLT *parent = nullptr, int32_t label = -1);
 
-    void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
-    real loss(const std::vector<int32_t>& labels, real lr, Model *model_);
-    void findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_);
-    real getLabelP(int32_t label, Vector &hidden, const Model *model_);
+ public:
+  PLT(std::shared_ptr<Args> args);
+  ~PLT();
 
-    int32_t getSize();
+  void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
+  real loss(const std::vector<int32_t>& labels, real lr, Model *model_);
+  void findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_);
+  real getLabelP(int32_t label, Vector &hidden, const Model *model_);
 
-    void save(std::ostream&);
-    void load(std::istream&);
+  int32_t getSize();
 
-    void printInfo();
+  void save(std::ostream&);
+  void load(std::istream&);
+
+  void printInfo();
 };
 
 }

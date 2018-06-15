@@ -28,6 +28,7 @@ namespace utils {
   void seek(std::ifstream&, int64_t);
   size_t cpuCount();
   std::string itos(int32_t, int32_t = 0);
+  void printProgress(float progress, std::ostream& log_stream);
 }
 
 }
