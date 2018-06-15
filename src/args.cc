@@ -70,7 +70,7 @@ Args::Args() {
   maxLeaves = 100;
 
   // KMeans
-  kMeansEps = 0.001;
+  kMeansEps = 0.0001;
   kMeansBalanced = true;
 
   // Update args

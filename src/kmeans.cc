@@ -16,7 +16,7 @@ namespace fasttext {
 // (Heuristic) Balanced K-Means clustering
 // Partition is returned via reference, calculated for cosine distance
 void kMeans(std::vector<Assignation>* partition, SRMatrix<Feature>& pointsFeatures,
-                    int centroids, double eps, bool balanced, int seed){
+                    int centroids, real eps, bool balanced, int seed){
 
     std::default_random_engine rng(seed);
 
@@ -40,17 +40,17 @@ void kMeans(std::vector<Assignation>* partition, SRMatrix<Feature>& pointsFeatur
     */
 
     // Init centroids
-    std::vector<std::vector<double>> centroidsFeatures(centroids);
+    std::vector<std::vector<real>> centroidsFeatures(centroids);
     for(int i = 0; i < centroids; ++i) {
         centroidsFeatures[i].resize(features, 0);
         std::uniform_int_distribution<int> dist(0, points);
         setVector(pointsFeatures.row(dist(rng)), centroidsFeatures[i]);
     }
 
-    double oldCos = INT_MIN, newCos = -1;
+    real oldCos = INT_MIN, newCos = -1;
 
     std::vector<Distances> distances(points);
-    for(int i=0; i < points; ++i ) distances[i].values.resize(centroids);
+    for(int i = 0; i < points; ++i ) distances[i].values.resize(centroids);
 
     while(newCos - oldCos >= eps){
         std::vector<int> centroidsSizes(centroids, 0);
@@ -58,7 +58,7 @@ void kMeans(std::vector<Assignation>* partition, SRMatrix<Feature>& pointsFeatur
         // Calculate distances to centroids
         for(int i = 0; i < points; ++i) {
             distances[i].index = i;
-            double maxDist = INT_MIN;
+            real maxDist = INT_MIN;
             for(int j = 0; j < centroids; ++j) {
                 distances[i].values[j].index = j;
                 distances[i].values[j].value = pointsFeatures.dotRow((*partition)[i].index, centroidsFeatures[j]);

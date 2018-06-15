@@ -98,7 +98,7 @@ void PLT::buildCompletePLTree(int32_t k_) {
 
   // Build complete tree
 
-  std::default_random_engine rng(time(0) * shift);
+  std::default_random_engine rng(time(0) * shift); // TODO: Refactor
   k = k_;
   t = static_cast<int>(ceil(static_cast<double>(args_->arity * k - 1) / (args_->arity - 1)));
   uint32_t ti = t - k;
@@ -145,11 +145,12 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   SRMatrix<Feature> labelsFeatures;
 
   {
-    std::cerr << "Reading documents ...\n";
+    std::cerr << "Computing labels' features matrix ...\n";
     std::ifstream ifs(args_->input);
-    std::vector<std::unordered_map<int, double>> tmpLabelsFeatures(k);
+    std::vector<std::unordered_map<int32_t, real>> tmpLabelsFeatures(k);
     std::vector<int32_t> line, labels;
     std::vector<real> line_values;
+    int max = 0;
 
     int i = 0;
     while (ifs.peek() != EOF) {
@@ -159,27 +160,32 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
       else
         dict->getLine(ifs, line, line_values, labels);
 
+      unitNorm(line_values);
+      line_values.back() = 1.0; // Left bias term untouched
       for(const auto& l : labels){
-        for(int i = 0; i < line.size(); ++i){
-          if (!tmpLabelsFeatures[l].count(line[i]))
-            tmpLabelsFeatures[l][line[i]] = 0;
-          tmpLabelsFeatures[l][line[i]] += line_values[i];
+        for(int j = 0; j < line.size(); ++j){
+          if (!tmpLabelsFeatures[l].count(line[j]))
+            tmpLabelsFeatures[l][line[j]] = 0;
+          tmpLabelsFeatures[l][line[j]] += line_values[j];
         }
       }
     }
     ifs.close();
 
-    std::cerr << "Computing labels' features matrix ...\n";
-
     for(int l = 0; l < k; ++l){
-      utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
+      utils::printProgress(static_cast<float>(l)/k, std::cerr);
       std::vector<Feature> labelFeatures;
       for(const auto& f : tmpLabelsFeatures[l])
         labelFeatures.push_back({f.first, f.second});
       std::sort(labelFeatures.begin(), labelFeatures.end());
+      unitNorm(labelFeatures);
       labelsFeatures.appendRow(labelFeatures);
     }
-    labelsFeatures.unitNormRows();
+
+    assert(labelsFeatures.rows() == dict->nlabels());
+    assert(labelsFeatures.cols() == dict->nwords());
+
+    std::cerr << std::endl;
   }
 
   // Prepare partitions
@@ -192,8 +198,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   std::vector<std::future<NodePartition>> results;
 
   NodePartition rootPart = {tree_root, partition};
-  results.emplace_back(tPool.enqueue(nodeKMeansThread, rootPart, std::ref(labelsFeatures),
-                                     args, kMeansSeeder(rng)));
+  results.emplace_back(tPool.enqueue(nodeKMeansThread, rootPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
 
   std::cerr << "Hierarchical K-Means clustering in " << args->thread << " threads ...\n";
 
@@ -219,13 +224,11 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
       NodePLT *n = createNode(nPart.node);
 
       if(partitions[i]->size() <= args->maxLeaves) {
-        //n->kNNNode = true;
         for (const auto& a : *partitions[i]) createNode(n, a.index);
         delete partitions[i];
       } else {
         NodePartition childPart = {n, partitions[i]};
-        results.emplace_back(tPool.enqueue(nodeKMeansThread, childPart, std::ref(labelsFeatures),
-                                           args, kMeansSeeder(rng)));
+        results.emplace_back(tPool.enqueue(nodeKMeansThread, childPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
       }
     }
 

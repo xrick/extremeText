@@ -12,16 +12,20 @@
 #include <iostream>
 #include <algorithm>
 
+#include "real.h"
 #include "smatrix.h"
 
 namespace fasttext {
 
 struct Feature {
     int index;
-    double value;
+    real value;
 
-    bool operator<(const Feature& r) const { return value < r.value; }
-    bool operator>(const Feature& r) const { return value > r.value; }
+//    bool operator<(const Feature& r) const { return value < r.value; }
+//    bool operator>(const Feature& r) const { return value > r.value; }
+
+    bool operator<(const Feature& r) const { return index < r.index; }
+    bool operator>(const Feature& r) const { return index > r.index; }
 };
 
 // Sparse utils
@@ -158,7 +162,7 @@ inline void unitNorm(T* data, size_t size){
 }
 
 inline void unitNorm(Feature* data, size_t size){
-    double norm = 0;
+    real norm = 0;
     for(int f = 0; f < size; ++f) norm += data[f].value * data[f].value;
     norm = std::sqrt(norm);
     if(norm == 0) norm = 1;

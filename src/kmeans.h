@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "smatrix.h"
+#include "real.h"
 
 namespace fasttext {
 
@@ -28,6 +29,6 @@ struct Distances{
 
 // Partition is returned via reference, calculated for cosine distance
 void kMeans(std::vector<Assignation>* partition, SRMatrix<Feature>& pointsFeatures,
-                    int centroids, double eps, bool balanced, int seed);
+                    int centroids, real eps, bool balanced, int seed);
 
 }

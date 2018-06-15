@@ -477,17 +477,6 @@ int32_t Dictionary::getLine(std::istream& in,
   }
    */
 
-  // Unit Norm
-  /*
-  if(args_->unitNorm && words_values.size()) {
-    real norm = 0;
-    for(const auto& i : words_values) norm += i * i;
-    norm = std::sqrt(norm);
-    if(norm == 0) norm = 1;
-    for(auto& i : words_values) i /= norm;
-  }
-   */
-
   assert(words.size() == words_values.size());
 
   return ntokens;
