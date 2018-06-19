@@ -29,7 +29,7 @@ enum class entry_type : int8_t {word=0, label=1};
 struct entry {
   std::string word;
   int64_t count;
-  int32_t docCount;
+  int32_t doc_count;
   entry_type type;
   std::vector<int32_t> subwords;
 };

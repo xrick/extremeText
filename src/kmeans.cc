@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
+ * https://github.com/mwydmuch/napkinXML
  */
 
 #include <algorithm>
@@ -50,7 +51,7 @@ void kMeans(std::vector<Assignation>* partition, SRMatrix<Feature>& pointsFeatur
     real oldCos = INT_MIN, newCos = -1;
 
     std::vector<Distances> distances(points);
-    for(int i = 0; i < points; ++i ) distances[i].values.resize(centroids);
+    for(int i = 0; i < points; ++i) distances[i].values.resize(centroids);
 
     while(newCos - oldCos >= eps){
         std::vector<int> centroidsSizes(centroids, 0);

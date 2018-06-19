@@ -150,7 +150,6 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
     std::vector<std::unordered_map<int32_t, real>> tmpLabelsFeatures(k);
     std::vector<int32_t> line, labels;
     std::vector<real> line_values;
-    int max = 0;
 
     int i = 0;
     while (ifs.peek() != EOF) {
@@ -160,13 +159,13 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
       else
         dict->getLine(ifs, line, line_values, labels);
 
-      unitNorm(line_values);
-      line_values.back() = 1.0; // Left bias term untouched
+      unitNorm(line_values.data(), line_values.size() - 1); // Left bias term untouched
       for(const auto& l : labels){
         for(int j = 0; j < line.size(); ++j){
-          if (!tmpLabelsFeatures[l].count(line[j]))
-            tmpLabelsFeatures[l][line[j]] = 0;
-          tmpLabelsFeatures[l][line[j]] += line_values[j];
+          auto f = tmpLabelsFeatures[l].find(line[j]);
+          if(f == tmpLabelsFeatures[l].end())
+            tmpLabelsFeatures[l][line[j]] = line_values[j];
+          else (*f).second += line_values[j];
         }
       }
     }
@@ -182,8 +181,8 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
       labelsFeatures.appendRow(labelFeatures);
     }
 
-    assert(labelsFeatures.rows() == dict->nlabels());
-    assert(labelsFeatures.cols() == dict->nwords());
+    //assert(labelsFeatures.rows() == dict->nlabels());
+    //assert(labelsFeatures.cols() == dict->nwords());
 
     std::cerr << std::endl;
   }

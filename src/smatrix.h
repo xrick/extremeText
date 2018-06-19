@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
+ * https://github.com/mwydmuch/napkinXML
  */
 
 #pragma once
@@ -70,6 +71,8 @@ public:
     void clear();
     void save(std::string outfile);
     void save(std::ostream& out);
+    void saveAsText(std::string outfile);
+    void saveAsText(std::ostream& out);
     void load(std::string infile);
     void load(std::istream& in);
 
@@ -206,6 +209,24 @@ void SRMatrix<T>::save(std::ostream& out){
         out.write((char*) &s[i], sizeof(s[i]));
         for(int j = 0; j <= s[i]; ++j)
             out.write((char *) &r[i][j], sizeof(T));
+    }
+}
+
+template <typename T>
+void SRMatrix<T>::saveAsText(std::string outfile) {
+    std::ofstream out(outfile);
+    saveAsText(out);
+    out.close();
+}
+
+template <typename T>
+void SRMatrix<T>::saveAsText(std::ostream& out) {
+    out << m << " " << n << "\n";
+    for (int i = 0; i < m; ++i) {
+      out << s[i];
+      for (int j = 0; j < s[i]; ++j)
+          out << " " << r[i][j];
+      out << "\n";
     }
 }
 

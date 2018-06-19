@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
+ * https://github.com/mwydmuch/napkinXML
  */
 
 #pragma once

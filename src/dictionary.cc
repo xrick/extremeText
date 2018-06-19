@@ -53,7 +53,7 @@ void Dictionary::add(const std::string& w) {
     entry e;
     e.word = w;
     e.count = 1;
-    e.docCount = 0;
+    e.doc_count = 0;
     e.type = getType(w);
     words_.push_back(e);
     word2int_[h] = size_++;
@@ -69,7 +69,7 @@ void Dictionary::add(const std::string& w, std::unordered_set<int32_t>& uniqWord
     entry e;
     e.word = w;
     e.count = 1;
-    e.docCount = 0;
+    e.doc_count = 0;
     e.type = getType(w);
     words_.push_back(e);
     word2int_[h] = size_++;
@@ -78,7 +78,7 @@ void Dictionary::add(const std::string& w, std::unordered_set<int32_t>& uniqWord
   }
 
   if(!uniqWords.count(h)){
-    words_[word2int_[h]].docCount++;
+    words_[word2int_[h]].doc_count++;
     uniqWords.insert(h);
   }
 }
@@ -278,6 +278,7 @@ void Dictionary::readFromFile(std::istream& in) {
       threshold(minThreshold, minThreshold);
     }
   }
+  ++ndocs_;
   threshold(args_->minCount, args_->minCountLabel);
   initTableDiscard();
   initNgrams();
@@ -377,11 +378,11 @@ void Dictionary::addSubwordsTfIdf(std::vector<int32_t>& line,
   if (wid >= 0) {
     if (args_->maxn <= 0) { // in vocab w/o subwords
       line.push_back(wid);
-      doc_counts.push_back(words_[wid].docCount);
+      doc_counts.push_back(words_[wid].doc_count);
     } else { // in vocab w/ subwords
       const std::vector<int32_t>& ngrams = getSubwords(wid);
       line.insert(line.end(), ngrams.cbegin(), ngrams.cend());
-      for(auto it = 0; it < ngrams.size(); ++it) doc_counts.push_back(words_[wid].docCount);
+      for(auto it = 0; it < ngrams.size(); ++it) doc_counts.push_back(words_[wid].doc_count);
     }
   }
 }
@@ -469,13 +470,12 @@ int32_t Dictionary::getLine(std::istream& in,
     words_values.push_back(1);
    */
 
-  // Pop bias word
-  /*
-  if(words.size()) {
-    words.pop_back();
-    words_values.pop_back();
+  // Add bias word
+  auto eosId = getId(EOS, hash(EOS));
+  if(words.back() != eosId) {
+    words.push_back(eosId);
+    words_values.push_back(1.0);
   }
-   */
 
   assert(words.size() == words_values.size());
 
@@ -530,6 +530,13 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
   for(auto &it : words_values)
     it /= values_sum / words.size();
 
+  // Add bias word
+  auto eosId = getId(EOS, hash(EOS));
+  if(words.back() != eosId) {
+    words.push_back(eosId);
+    words_values.push_back(1.0);
+  }
+
   assert(words.size() == words_values.size());
 
 //  for(auto i = 0; i < words.size(); ++i){
@@ -572,7 +579,7 @@ void Dictionary::save(std::ostream& out) const {
     out.write(e.word.data(), e.word.size() * sizeof(char));
     out.put(0);
     out.write((char*) &(e.count), sizeof(int64_t));
-    out.write((char*) &(e.docCount), sizeof(int32_t));
+    out.write((char*) &(e.doc_count), sizeof(int32_t));
     out.write((char*) &(e.type), sizeof(entry_type));
   }
   for (const auto pair : pruneidx_) {
@@ -596,7 +603,7 @@ void Dictionary::load(std::istream& in) {
       e.word.push_back(c);
     }
     in.read((char*) &e.count, sizeof(int64_t));
-    in.read((char*) &e.docCount, sizeof(int32_t));
+    in.read((char*) &e.doc_count, sizeof(int32_t));
     in.read((char*) &e.type, sizeof(entry_type));
     words_.push_back(e);
   }

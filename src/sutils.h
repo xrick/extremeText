@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
+ * https://github.com/mwydmuch/napkinXML
  */
 
 #pragma once
@@ -21,11 +22,20 @@ struct Feature {
     int index;
     real value;
 
-//    bool operator<(const Feature& r) const { return value < r.value; }
-//    bool operator>(const Feature& r) const { return value > r.value; }
+
+    // In extremeText we do not need this kind of sorting
+    /*
+    bool operator<(const Feature& r) const { return value < r.value; }
+    bool operator>(const Feature& r) const { return value > r.value; }
+    */
 
     bool operator<(const Feature& r) const { return index < r.index; }
     bool operator>(const Feature& r) const { return index > r.index; }
+
+    friend std::ostream& operator<<(std::ostream& os, const Feature& fn) {
+        os << fn.index << ":" << fn.value;
+        return os;
+    }
 };
 
 // Sparse utils
