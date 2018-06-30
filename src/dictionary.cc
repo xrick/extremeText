@@ -292,11 +292,6 @@ void Dictionary::readFromFile(std::istream& in) {
     throw std::invalid_argument(
         "Empty vocabulary. Try a smaller -minCount value.");
   }
-
-  if(args_->labelsOrder){
-    std::cerr << "Reordering labels ...";
-    reorderLabels();
-  }
 }
 
 void Dictionary::threshold(int64_t t, int64_t tl) {
@@ -422,10 +417,8 @@ int32_t Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
                             std::vector<real>& words_values,
                             std::vector<int32_t>& labels) const {
-
   std::vector<std::string> tags;
   return getLine(in, words, words_values, labels, tags);
-
 }
 
 int32_t Dictionary::getLine(std::istream& in,
@@ -470,6 +463,15 @@ int32_t Dictionary::getLine(std::istream& in,
     words_values.push_back(1);
    */
 
+  assert(words.size() == words_values.size());
+
+  real values_sum = 0;
+  for(auto &it : words_values)
+    values_sum += it;
+
+  for(auto &it : words_values)
+    it /= values_sum / words.size();
+
   // Add bias word
   auto eosId = getId(EOS, hash(EOS));
   if(words.back() != eosId) {
@@ -477,15 +479,22 @@ int32_t Dictionary::getLine(std::istream& in,
     words_values.push_back(1.0);
   }
 
-  assert(words.size() == words_values.size());
-
   return ntokens;
 }
 
 int32_t Dictionary::getLineTfIdf(std::istream& in,
-                            std::vector<int32_t>& words,
-                            std::vector<real>& words_values,
-                            std::vector<int32_t>& labels) const {
+                                 std::vector<int32_t>& words,
+                                 std::vector<real>& words_values,
+                                 std::vector<int32_t>& labels) const {
+  std::vector<std::string> tags;
+  return getLineTfIdf(in, words, words_values, labels, tags);
+}
+
+int32_t Dictionary::getLineTfIdf(std::istream& in,
+                                 std::vector<int32_t>& words,
+                                 std::vector<real>& words_values,
+                                 std::vector<int32_t>& labels,
+                                 std::vector<std::string>& tags) const {
   std::string token;
   real value;
   int32_t ntokens = 0;
@@ -496,6 +505,13 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
   words_values.clear();
   std::vector<int32_t> doc_counts;
   while (readWord(in, token, value)) {
+    if(token[0] == '#') {
+      tags.push_back(token);
+      continue;
+    }
+
+    if (token == EOS) break;
+
     uint32_t h = hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
@@ -506,7 +522,7 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
     } else if (type == entry_type::label && wid >= 0) {
       labels.push_back(wid - nwords_);
     }
-    if (token == EOS) break;
+    //if (token == EOS) break;
   }
   assert(words.size() == doc_counts.size());
   //TODO: add support for word ngrams
@@ -527,6 +543,8 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
     values_sum += tfidf;
   }
 
+  assert(words.size() == words_values.size());
+
   for(auto &it : words_values)
     it /= values_sum / words.size();
 
@@ -537,12 +555,11 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
     words_values.push_back(1.0);
   }
 
-  assert(words.size() == words_values.size());
-
-//  for(auto i = 0; i < words.size(); ++i){
-//    std::cout << words[i] << ":" << words_values[i] << " ";
-//  }
-//  std::cout << "\n";
+  /*
+  for(auto i = 0; i < words.size(); ++i)
+    std::cout << words[i] << ":" << words_values[i] << " ";
+  std::cout << "\n";
+   */
 
   return ntokens;
 }
@@ -674,33 +691,6 @@ void Dictionary::dump(std::ostream& out) const {
     }
     out << it.word << " " << it.count << " " << entryType << std::endl;
   }
-}
-
-void Dictionary::reorderLabels(){
-  int32_t maxLabel;
-
-  for(int i = nwords_; i < nwords_ + nlabels_; ++i){
-    int32_t label = std::stoi(words_[i].word.substr(args_->label.size()));
-    if(label > maxLabel) maxLabel = label;
-  }
-
-  ++maxLabel;
-  std::vector<entry> _words(maxLabel);
-  words_.resize(nwords_ + maxLabel);
-
-  for(int i = nwords_; i < nwords_ + nlabels_; ++i){
-    int label = std::stoi(words_[i].word.substr(args_->label.size()));
-    _words[label] = words_[i];
-    int32_t h = find(words_[i].word);
-    word2int_[h] = nwords_ + label;
-  }
-
-  for(int i = 0; i < maxLabel; ++i){
-    words_[nwords_ + i] = _words[i];
-  }
-
-  nlabels_ = maxLabel;
-  size_ = nwords_ + nlabels_;
 }
 
 }

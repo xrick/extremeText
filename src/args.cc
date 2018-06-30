@@ -356,7 +356,7 @@ void Args::printQuantizationHelp() {
 }
 
 void Args::printInfo(){
-  std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n";
+  std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n  Features: ";
   if(model == model_name::sup){
       if(tfidf) std::cerr << "  Features: tf-idf\n";
       else if(wordsWeights) std::cerr << "  Features: word weights\n";
