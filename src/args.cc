@@ -25,7 +25,7 @@ Args::Args() {
   epoch = 5;
   minCount = 5;
   minCountLabel = 0;
-  neg = 5;
+  neg = 0;
   wordNgrams = 1;
   loss = loss_name::ns;
   model = model_name::sg;
@@ -168,6 +168,7 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           loss = loss_name::hs;
         } else if (args.at(ai + 1) == "ns") {
           loss = loss_name::ns;
+          if(neg == 0) neg = 5;
         } else if (args.at(ai + 1) == "softmax") {
           loss = loss_name::softmax;
         } else if (args.at(ai + 1) == "plt") {
@@ -358,12 +359,13 @@ void Args::printQuantizationHelp() {
 void Args::printInfo(){
   std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n  Features: ";
   if(model == model_name::sup){
-      if(tfidf) std::cerr << "  Features: tf-idf\n";
-      else if(wordsWeights) std::cerr << "  Features: word weights\n";
-      else std::cerr << "  Features: bow\n";
+      if(tfidf) std::cerr << "tf-idf\n";
+      else if(wordsWeights) std::cerr << "word weights\n";
+      else std::cerr << "bow\n";
   }
-  std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch << ", buckets: " << bucket << "\n";
-  std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
+  std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch
+            << ", buckets: " << bucket << ", neg: " << neg << "\n";
+  //std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
 }
 
 void Args::save(std::ostream& out) {

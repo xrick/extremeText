@@ -108,6 +108,8 @@ class PLT: public LossLayer{
 
   void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
   real loss(const std::vector<int32_t>& labels, real lr, Model *model_);
+  NodeProb getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>>& n_queue,
+                        Vector& hidden, const Model *model_);
   void findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_);
   real getLabelP(int32_t label, Vector &hidden, const Model *model_);
 

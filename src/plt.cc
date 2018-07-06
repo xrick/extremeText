@@ -343,6 +343,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     std::unordered_set<NodePLT*> n_positive; // positive nodes
     std::unordered_set<NodePLT*> n_negative; // negative nodes
 
+    // PLT's node selection
     if (labels.size() > 0) {
         for (uint32_t i = 0; i < labels.size(); ++i) {
             NodePLT *n = tree_leaves[labels[i]];
@@ -371,6 +372,24 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     else
         n_negative.insert(tree_root);
 
+    // PLT's negative sampling
+    if(args_->neg > 0){
+        int n_sampled = 0;
+        std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
+        n_queue.push({tree_root, predictNode(tree_root, model_->hidden_, model_)});
+        while(n_sampled < args_->neg) {
+            NodePLT *n = getNextBest(n_queue, model_->hidden_, model_).node;
+            if(!n_positive.count(n)){
+                ++n_sampled;
+                while (n->parent) {
+                    if (!n_positive.count(n)) n_negative.insert(n);
+                    else break;
+                    n = n->parent;
+                }
+            }
+        }
+    }
+
     real loss = 0.0;
     double l2 = args_->l2;
 
@@ -390,14 +409,11 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     return loss;
 }
 
-void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
+NodeProb PLT::getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>>& n_queue,
+                           Vector& hidden, const Model *model_){
 
-    std::vector<NodePLT*> best_labels, found_leaves;
-    std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
-
-    n_queue.push({tree_root, predictNode(tree_root, hidden, model_)});
-
-    while (!n_queue.empty()) {
+    // while (!n_queue.empty()) {
+    while (true) {
         NodeProb np = n_queue.top(); // current node
         n_queue.pop();
 
@@ -405,11 +421,7 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
             if (np.node->label < 0) {
                 for (auto& child : np.node->children)
                     n_queue.push({child, np.prob * predictNode(child, hidden, model_)});
-            } else {
-                heap.push_back({np.prob, np.node->label});
-                if (heap.size() >= top_k)
-                    break;
-            }
+            } else return np;
         } else {
             if (np.node->label < 0) {
                 real sumOfP = 0.0;
@@ -428,13 +440,22 @@ void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, 
                     child.prob *= np.prob;
                     n_queue.push(child);
                 }
-            } else {
-                heap.push_back({np.prob, np.node->label});
-                if (heap.size() >= top_k)
-                    break;
-            }
+            } else return np;
         }
+
+        if(n_queue.empty()) return np;
     }
+}
+
+void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
+    std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
+    n_queue.push({tree_root, predictNode(tree_root, hidden, model_)});
+
+    for(int i = 0; i < top_k; ++i) {
+        NodeProb np = getNextBest(n_queue, hidden, model_);
+        heap.push_back({np.prob, np.node->label});
+    }
+    assert(heap.size() == top_k);
 }
 
 real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
