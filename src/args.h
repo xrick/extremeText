@@ -88,9 +88,9 @@ class Args {
     real l2;
     bool labelsWeights;
 
-    // Bagging args
+    // Ensemble args
     real bagging;
-    int nbase;
+    int ensemble;
 
     void parseArgs(const std::vector<std::string>& args);
     void printHelp();

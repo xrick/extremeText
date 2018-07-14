@@ -7,7 +7,7 @@
 #include "model.h"
 
 #include "plt.h"
-#include "bagging.h"
+#include "ensemble.h"
 
 
 namespace fasttext {
@@ -25,9 +25,8 @@ std::shared_ptr<LossLayer> lossLayerFactory(std::shared_ptr<Args> args, loss_nam
 }
 
 std::shared_ptr<LossLayer> lossLayerFactory(std::shared_ptr<Args> args){
-    //std::cout << args_->bagging_ratio << "\n";
-    if(args->bagging > 0.0)
-        return std::static_pointer_cast<LossLayer>(std::make_shared<Bagging>(args));
+    if(args->ensemble > 1)
+        return std::static_pointer_cast<LossLayer>(std::make_shared<Ensemble>(args));
     else
         return lossLayerFactory(args, args->loss);
 }

@@ -46,6 +46,15 @@ namespace utils {
     log_stream << std::setprecision(1) << std::setw(5) << progress << "%\r";
     log_stream << std::flush;
   }
+
+  uint32_t hash(const std::string& str){
+    uint32_t h = 2166136261;
+    for (size_t i = 0; i < str.size(); i++) {
+        h = h ^ uint32_t(str[i]);
+        h = h * 16777619;
+    }
+    return h;
+  }
 }
 
 }

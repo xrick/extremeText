@@ -10,10 +10,10 @@
 
 namespace fasttext {
     
-class Bagging: public LossLayer{
+class Ensemble: public LossLayer{
 public:
-    Bagging(std::shared_ptr<Args>);
-    ~Bagging();
+    Ensemble(std::shared_ptr<Args>);
+    ~Ensemble();
 
     int32_t getSize();
     void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);

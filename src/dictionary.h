@@ -101,7 +101,6 @@ class Dictionary {
         const std::string&,
         std::vector<int32_t>&,
         std::vector<std::string>&) const;
-    uint32_t hash(const std::string& str) const;
     void add(const std::string&);
     void add(const std::string&, std::unordered_set<int32_t>&);
     bool readWord(std::istream&, std::string&, real&) const;

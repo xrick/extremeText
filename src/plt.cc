@@ -289,15 +289,15 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     // Original update
     /*
     real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->nbase)
+    model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->ensemble)
     model_->wo_->addRow(model_->hidden_, shift + n->index, alpha);
      */
 
     if(args_->fobos){
-        model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->index, lr, diff / args_->nbase, l2);
+        model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->index, lr, diff / args_->ensemble, l2);
         model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->index, lr, diff, l2);
     } else {
-        model_->grad_.addRowL2(*model_->wo_, shift + n->index, lr, diff / args_->nbase, l2);
+        model_->grad_.addRowL2(*model_->wo_, shift + n->index, lr, diff / args_->ensemble, l2);
         model_->wo_->addRowL2(model_->hidden_, shift + n->index, lr, diff, l2);
     }
 
@@ -369,15 +369,16 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
             }
         }
     }
-    else
-        n_negative.insert(tree_root);
+    else n_negative.insert(tree_root);
 
     // PLT's negative sampling
     if(args_->neg > 0){
-        int n_sampled = 0;
+        int n_sampled = 0, n_labels = 0;
         std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
         n_queue.push({tree_root, predictNode(tree_root, model_->hidden_, model_)});
         while(n_sampled < args_->neg) {
+        //while(n_labels < labels.size()) { // alternative negative sampling
+        //for(int i = 0; i < args_->neg; ++i) { // alternative negative sampling
             NodePLT *n = getNextBest(n_queue, model_->hidden_, model_).node;
             if(!n_positive.count(n)){
                 ++n_sampled;
@@ -386,7 +387,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
                     else break;
                     n = n->parent;
                 }
-            }
+            } else ++n_labels;
         }
     }
 

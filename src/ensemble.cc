@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-#include "bagging.h"
+#include "ensemble.h"
 
 #include <random>
 #include <set>
@@ -12,21 +12,22 @@
 #include <vector>
 
 #include "model.h"
+#include "utils.h"
 
 namespace fasttext {
 
-Bagging::Bagging(std::shared_ptr<Args> args) : LossLayer(args){ }
+Ensemble::Ensemble(std::shared_ptr<Args> args) : LossLayer(args){ }
 
-Bagging::~Bagging(){ }
+Ensemble::~Ensemble(){ }
 
-void Bagging::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
-    std::cerr << "Setting up Bagging layer ...\n";
+void Ensemble::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
+    std::cerr << "Setting up Ensemble layer ...\n";
     args_ = args;
     sizeSum = 0;
     args_->randomTree = true;
 
-    assert(args_->nbase > 0);
-    for(auto i = 0; i < args_->nbase; ++i){
+    assert(args_->ensemble > 0);
+    for(auto i = 0; i < args_->ensemble; ++i){
         auto base = lossLayerFactory(args_, args_->loss);
         base->setup(args_, dict);
         base->setShift(sizeSum);
@@ -35,10 +36,9 @@ void Bagging::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict
     }
 
     multilabel = baseLayers[0]->isMultilabel();
-    std::cout << "  N base: " << args_->nbase << ", output mat size: " << sizeSum << ", multilabel " << multilabel << "\n";
 }
 
-real Bagging::loss(const std::vector <int32_t> &input, const std::vector<int32_t>& labels, real lr, Model *model_){
+real Ensemble::loss(const std::vector <int32_t> &input, const std::vector<int32_t>& labels, real lr, Model *model_){
     real lossSum = 0.0;
     real numOfUpdates = 0.0;
     std::string catInput = "&";
@@ -54,14 +54,14 @@ real Bagging::loss(const std::vector <int32_t> &input, const std::vector<int32_t
         numOfUpdates += 1.0;
     }
 
-    return lossSum/args_->nbase;
+    return lossSum/args_->ensemble;
 }
 
-void Bagging::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_){
+void Ensemble::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_){
     std::unordered_map <int32_t, real> label_freq;
     std::set<int32_t> label_set;
 
-    for(int i=0; i < args_->nbase; i++ ){
+    for(int i=0; i < args_->ensemble; i++ ){
         heap.clear();
         baseLayers[i]->findKBest(top_k, heap, hidden, model_);
 
@@ -73,7 +73,7 @@ void Bagging::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& he
     heap.clear();    
     for(auto const& value : label_set) label_freq[value] = 0.0;
     
-    for(int i=0; i < args_->nbase; i++ ){
+    for(int i=0; i < args_->ensemble; ++i){
         for(auto const& value : label_set){
             real prob = baseLayers[i]->getLabelP(value, hidden, model_);
             label_freq[value] += prob;
@@ -81,38 +81,34 @@ void Bagging::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& he
     }
 
     for(const auto& elem: label_freq)
-        heap.push_back(std::make_pair(elem.second / ((real)args_->nbase), elem.first));
+        heap.push_back(std::make_pair(elem.second / ((real)args_->ensemble), elem.first));
 
     std::sort(heap.rbegin(), heap.rend());
     heap.resize(top_k);
 }
 
-int32_t Bagging::getSize(){
+int32_t Ensemble::getSize(){
     return sizeSum;
 }
 
-void Bagging::save(std::ostream& out){
-    std::cerr << "Saving Bagging layer ...\n";
+void Ensemble::save(std::ostream& out){
+    std::cerr << "Saving Ensemble layer ...\n";
     for(auto base : baseLayers)
         base->save(out);
 }
 
-void Bagging::load(std::istream& in){
-    std::cerr << "Loading Bagging layer ...\n";
+void Ensemble::load(std::istream& in){
+    std::cerr << "Loading Ensemble layer ...\n";
 
-    for(auto i = 0; i < args_->nbase; ++i){
+    for(auto i = 0; i < args_->ensemble; ++i){
         auto base = lossLayerFactory(args_, args_->loss);
         base->load(in);
         baseLayers.push_back(base);
     }
 }
 
-real Bagging::hashInput(const std::string& str){
-    uint32_t h = 2166136261;
-    for (size_t i = 0; i < str.size(); i++) {
-        h = h ^ uint32_t(str[i]);
-        h = h * 16777619;
-    }
+real Ensemble::hashInput(const std::string& str){
+    uint32_t h = utils::hash(str);
     uint32_t max = 1 << 24;
     return static_cast<real>(h % max) / max;
 }

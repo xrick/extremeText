@@ -23,8 +23,8 @@
 
 namespace fasttext {
 
-constexpr int32_t FASTTEXT_VERSION = 12; /* Version 1b */
-constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 793712314;
+constexpr int32_t FASTTEXT_VERSION = 1410; /* extremeText Version E 1.0 */
+constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 1410;
 
 FastText::FastText() : quant_(false) {}
 
@@ -57,7 +57,7 @@ int32_t FastText::getWordId(const std::string& word) const {
 }
 
 int32_t FastText::getSubwordId(const std::string& word) const {
-  int32_t h = dict_->hash(word) % args_->bucket;
+  int32_t h = utils::hash(word) % args_->bucket;
   return dict_->nwords() + h;
 }
 
@@ -79,7 +79,7 @@ void FastText::getVector(Vector& vec, const std::string& word) const {
 void FastText::getSubwordVector(Vector& vec, const std::string& subword)
     const {
   vec.zero();
-  int32_t h = dict_->hash(subword) % args_->bucket;
+  int32_t h = utils::hash(subword) % args_->bucket;
   h = h + dict_->nwords();
   addInputVector(vec, h);
 }
@@ -503,7 +503,6 @@ void FastText::predictThread(
   std::vector<real> words_values;
   std::vector<std::string> tags;
 
-//  std::unordered_set<int> seenLabels;
   std::vector<std::pair<real,int32_t>> modelPredictions;
   Vector hidden(args_->dim);
   Vector output(dict_->nlabels());
@@ -514,26 +513,16 @@ void FastText::predictThread(
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
     modelPredictions.clear();
-//    seenLabels.clear();
 
     model_->computeHidden(words, words_values, hidden);
     model_->predict(k, threshold, modelPredictions, hidden, output);
 
     for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
-//      if(seenLabels.count(it->second)) continue;
 
       if (it != modelPredictions.cbegin()) ofs << " ";
       ofs << dict_->getLabel(it->second);
       if (print_prob) ofs << " " << it->first;
-//      seenLabels.insert(it->second);
     }
-
-//    for (auto l = labels.cbegin(); l != labels.cend(); l++) {
-//      if(seenLabels.count(*l)) continue;
-//      ofs << " " << dict_->getLabel(*l);
-//      if (print_prob) ofs << " " << model_->getProb(hidden, *l);
-//      seenLabels.insert(*l);
-//    }
 
     for (auto &t : tags) ofs << " " << t;
     ofs << std::endl;

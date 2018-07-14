@@ -2,6 +2,27 @@
 
 extremeText is an extension of fastText library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
+It adds new options for fastText supervised command:
+
+```
+$ ./fasttext supervised
+
+New loss for multi-label classification:
+  -loss plt
+
+With the following optional arguments:
+  -treeType           tree type of PLT: complete, huffman, kmeans (default = kmeans)
+  -ensemble           number of trees in ensemble (default = 1)
+  -bagging            bagging ration for ensemble (default = 1.0)
+  -l2                 l2 regularization (default = 0)
+  -tf-idf             calculates tf-idf weights for words
+  -wordsWeights       reads words weights from file (format: <word>:<weights>)
+```
+
+This fork also modifies prediction command to make it work in parallel.
+
+More examples and scripts to replicate results on datasets from The Extreme Classification Repository can be found in the xml_experiments directory.
+
 ## Usage
 
 (soon)

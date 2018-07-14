@@ -79,8 +79,8 @@ Args::Args() {
   labelsWeights = false;
 
   // Bagging args
-  bagging = -1;
-  nbase = 1;
+  bagging = 1.0;
+  ensemble = 1;
 
 }
 
@@ -275,9 +275,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       // Bagging args
       } else if (args[ai] == "-bagging") {
         bagging = std::stof(args.at(ai + 1));
-        nbase = 3;
-      } else if (args[ai] == "-nbase") {
-        nbase = std::stoi(args.at(ai + 1));
+      } else if (args[ai] == "-ensemble") {
+        ensemble = std::stoi(args.at(ai + 1));
       } else {
         std::cerr << "Unknown argument: " << args[ai] << std::endl;
         printHelp();
@@ -363,6 +362,7 @@ void Args::printInfo(){
       else if(wordsWeights) std::cerr << "word weights\n";
       else std::cerr << "bow\n";
   }
+  if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << ", bagging ratio: " << bagging << "\n";
   std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch
             << ", buckets: " << bucket << ", neg: " << neg << "\n";
   //std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
@@ -393,9 +393,9 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(unitNorm), sizeof(bool));
   out.write((char*) &(probNorm), sizeof(bool));
 
-  // Bagging args
+  // Ensemble args
+  out.write((char*) &(ensemble), sizeof(int));
   out.write((char*) &(bagging), sizeof(real));
-  out.write((char*) &(nbase), sizeof(int));
 }
 
 void Args::load(std::istream& in) {
@@ -423,9 +423,9 @@ void Args::load(std::istream& in) {
   in.read((char*) &(unitNorm), sizeof(bool));
   in.read((char*) &(probNorm), sizeof(bool));
 
-  // Bagging args
+  // Ensemble args
+  in.read((char*) &(ensemble), sizeof(int));
   in.read((char*) &(bagging), sizeof(real));
-  in.read((char*) &(nbase), sizeof(int));
 }
 
 void Args::dump(std::ostream& out) const {

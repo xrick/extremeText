@@ -9,7 +9,7 @@
 
 CXX = c++
 CXXFLAGS = -pthread -std=c++0x -march=native
-OBJS = args.o dictionary.o productquantizer.o matrix.o qmatrix.o vector.o model.o utils.o fasttext.o losslayer.o plt.o bagging.o kmeans.o
+OBJS = args.o dictionary.o productquantizer.o matrix.o qmatrix.o vector.o model.o utils.o fasttext.o losslayer.o plt.o ensemble.o kmeans.o
 INCLUDES = -I.
 
 opt: CXXFLAGS += -O3 -funroll-loops
@@ -48,8 +48,8 @@ losslayer.o: src/losslayer.cc src/losslayer.h
 plt.o: src/plt.cc src/plt.h
 	$(CXX) $(CXXFLAGS) -c src/plt.cc
 
-bagging.o: src/bagging.cc src/bagging.h
-	$(CXX) $(CXXFLAGS) -c src/bagging.cc
+ensemble.o: src/ensemble.cc src/ensemble.h
+	$(CXX) $(CXXFLAGS) -c src/ensemble.cc
 
 kmeans.o: src/kmeans.cc src/kmeans.h
 	$(CXX) $(CXXFLAGS) -c src/kmeans.cc

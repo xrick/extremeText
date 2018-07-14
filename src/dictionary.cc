@@ -10,13 +10,14 @@
 #include "dictionary.h"
 
 #include <assert.h>
-
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <iterator>
 #include <cmath>
 #include <stdexcept>
+
+#include "utils.h"
 
 namespace fasttext {
 
@@ -34,7 +35,7 @@ Dictionary::Dictionary(std::shared_ptr<Args> args, std::istream& in) : args_(arg
 }
 
 int32_t Dictionary::find(const std::string& w) const {
-  return find(w, hash(w));
+  return find(w, utils::hash(w));
 }
 
 int32_t Dictionary::find(const std::string& w, uint32_t h) const {
@@ -166,15 +167,6 @@ std::string Dictionary::getWord(int32_t id) const {
   return words_[id].word;
 }
 
-uint32_t Dictionary::hash(const std::string& str) const {
-  uint32_t h = 2166136261;
-  for (size_t i = 0; i < str.size(); i++) {
-    h = h ^ uint32_t(str[i]);
-    h = h * 16777619;
-  }
-  return h;
-}
-
 void Dictionary::computeSubwords(const std::string& word,
                                std::vector<int32_t>& ngrams,
                                std::vector<std::string>& substrings) const {
@@ -187,7 +179,7 @@ void Dictionary::computeSubwords(const std::string& word,
         ngram.push_back(word[j++]);
       }
       if (n >= args_->minn && !(n == 1 && (i == 0 || j == word.size()))) {
-        int32_t h = hash(ngram) % args_->bucket;
+        int32_t h = utils::hash(ngram) % args_->bucket;
         ngrams.push_back(nwords_ + h);
         substrings.push_back(ngram);
       }
@@ -206,7 +198,7 @@ void Dictionary::computeSubwords(const std::string& word,
         ngram.push_back(word[j++]);
       }
       if (n >= args_->minn && !(n == 1 && (i == 0 || j == word.size()))) {
-        int32_t h = hash(ngram) % args_->bucket;
+        int32_t h = utils::hash(ngram) % args_->bucket;
         pushHash(ngrams, h);
       }
     }
@@ -442,7 +434,7 @@ int32_t Dictionary::getLine(std::istream& in,
       continue;
     }
 
-    uint32_t h = hash(token);
+    uint32_t h = utils::hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
 
@@ -473,7 +465,7 @@ int32_t Dictionary::getLine(std::istream& in,
     it /= values_sum / words.size();
 
   // Add bias word
-  auto eosId = getId(EOS, hash(EOS));
+  auto eosId = getId(EOS, utils::hash(EOS));
   if(words.back() != eosId) {
     words.push_back(eosId);
     words_values.push_back(1.0);
@@ -512,7 +504,7 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
 
     if (token == EOS) break;
 
-    uint32_t h = hash(token);
+    uint32_t h = utils::hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
 
@@ -549,7 +541,7 @@ int32_t Dictionary::getLineTfIdf(std::istream& in,
     it /= values_sum / words.size();
 
   // Add bias word
-  auto eosId = getId(EOS, hash(EOS));
+  auto eosId = getId(EOS, utils::hash(EOS));
   if(words.back() != eosId) {
     words.push_back(eosId);
     words_values.push_back(1.0);
