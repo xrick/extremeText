@@ -14,6 +14,9 @@ BIN=${SCRIPT_DIR}/../fasttext
 
 if [ ! -e datasets4fastText ]; then
     git clone https://github.com/mwydmuch/datasets4fastText.git
+    cd datasets4fastText
+    git checkout with_features_values
+    cd ..
 fi
 
 if [ ! -e $FILES_PREFIX ]; then
@@ -68,7 +71,7 @@ echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)"
 #$BIN save-all ${MODEL}.bin ${TEST} test
 
 # Get probabilities for labels in the file
-time $BIN get-prob ${MODEL}.bin ${TEST} ${MODEL}_test.prob
+#time $BIN get-prob ${MODEL}.bin ${TEST} ${MODEL}_test.prob 1
 
 # Predict labels and get probabilities for labels in the file
-time $BIN predict-prob ${MODEL}.bin ${TEST} 5 0 ${MODEL}_test.pred-prob 3
+#time $BIN predict-prob ${MODEL}.bin ${TEST} 5 0 ${MODEL}_test.pred-prob 1

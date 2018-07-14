@@ -21,11 +21,8 @@ With the following optional arguments:
 
 This fork also modifies prediction command to make it work in parallel.
 
-More examples and scripts to replicate results on datasets from The Extreme Classification Repository can be found in the xml_experiments directory.
+More examples and scripts to replicate results on datasets from [The Extreme Classification Repository](http://manikvarma.org/downloads/XC/XMLRepository.html) can be found in the [xml_experiments](https://github.com/mwydmuch/extremeText) directory.
 
-## Usage
-
-(soon)
 
 # fastText README.md
 
