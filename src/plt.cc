@@ -97,8 +97,6 @@ void PLT::buildCompletePLTree(int32_t k_) {
     std::cout << "  Building PLT with complete tree ...\n";
 
   // Build complete tree
-
-  std::default_random_engine rng(time(0) * shift); // TODO: Refactor
   k = k_;
   t = static_cast<int>(ceil(static_cast<double>(args_->arity * k - 1) / (args_->arity - 1)));
   uint32_t ti = t - k;
@@ -199,7 +197,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   NodePartition rootPart = {tree_root, partition};
   results.emplace_back(tPool.enqueue(nodeKMeansThread, rootPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
 
-  std::cerr << "Hierarchical K-Means clustering in " << args->thread << " threads ...\n";
+  std::cerr << "Starting hierarchical K-Means clustering in " << args->thread << " threads ...\n";
 
   for(int r = 0; r < results.size(); ++r) {
     utils::printProgress(static_cast<float>(r)/results.size(), std::cerr);
@@ -508,9 +506,10 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
     return p;
 }
 
-void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
-  args_ = args;
-  rng.seed(args->seed);
+void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
+  rng.seed(seed);
+  std::cout << seed << "\n";
+
   if(args_->treeStructure != ""){
     args_->treeType = tree_type_name::custom;
     loadTreeStructure(args_->treeStructure);
@@ -522,7 +521,7 @@ void PLT::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
   else if (args_->treeType == tree_type_name::huffman)
     buildHuffmanPLTree(dict->getCounts(entry_type::label));
   else if (args_->treeType == tree_type_name::kmeans)
-    buildKMeansPLTree(args, dict);
+    buildKMeansPLTree(args_, dict);
 }
 
 int32_t PLT::getSize(){

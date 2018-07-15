@@ -76,6 +76,10 @@ int64_t LossLayer::getShift(){
     return shift;
 }
 
+void LossLayer::setSeed(uint32_t seed_){
+    rng.seed(seed_);
+}
+
 void LossLayer::printInfo(){
 
 }

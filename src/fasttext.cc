@@ -898,7 +898,7 @@ void FastText::train(const Args args) {
 
   lossLayer_ = lossLayerFactory(args_);
   if(lossLayer_ != nullptr)
-    lossLayer_->setup(args_, dict_);
+    lossLayer_->setup(dict_, args_->seed);
 
   if (args_->model == model_name::sup) {
     if(lossLayer_ != nullptr)

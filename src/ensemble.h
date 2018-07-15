@@ -16,7 +16,7 @@ public:
     ~Ensemble();
 
     int32_t getSize();
-    void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
+    void setup(std::shared_ptr<Dictionary>, uint32_t seed);
 
     real loss(const std::vector <int32_t> &input, const std::vector<int32_t>& labels, real lr, Model *model_);
     void findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_);

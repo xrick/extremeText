@@ -27,9 +27,10 @@ public:
     bool isMultilabel();
     int64_t getShift();
     void setShift(int64_t);
+    void setSeed(uint32_t);
 
     virtual int32_t getSize() = 0;
-    virtual void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>) = 0;
+    virtual void setup(std::shared_ptr<Dictionary>, uint32_t seed) = 0;
 
     virtual real loss(int32_t target, real lr, Model *model_);
     virtual real loss(const std::vector <int32_t> &labels, real lr, Model *model_);
@@ -43,6 +44,7 @@ public:
     virtual void printInfo();
 
 protected:
+    std::default_random_engine rng;
     std::shared_ptr<Args> args_;
 
     int64_t shift;

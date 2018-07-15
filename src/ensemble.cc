@@ -20,16 +20,16 @@ Ensemble::Ensemble(std::shared_ptr<Args> args) : LossLayer(args){ }
 
 Ensemble::~Ensemble(){ }
 
-void Ensemble::setup(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
+void Ensemble::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
     std::cerr << "Setting up Ensemble layer ...\n";
-    args_ = args;
+    rng.seed(seed);
     sizeSum = 0;
     args_->randomTree = true;
 
     assert(args_->ensemble > 0);
     for(auto i = 0; i < args_->ensemble; ++i){
         auto base = lossLayerFactory(args_, args_->loss);
-        base->setup(args_, dict);
+        base->setup(dict, seed * (sizeSum + 1));
         base->setShift(sizeSum);
         sizeSum += base->getSize();
         baseLayers.push_back(base);

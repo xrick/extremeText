@@ -71,7 +71,7 @@ struct NodePartition{
 
 class PLT: public LossLayer{
  private:
-  std::default_random_engine rng;
+
 
   uint32_t k; // number of labels
   uint32_t t; // number of tree nodes
@@ -106,7 +106,7 @@ class PLT: public LossLayer{
   PLT(std::shared_ptr<Args> args);
   ~PLT();
 
-  void setup(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
+  void setup(std::shared_ptr<Dictionary>, uint32_t seed);
   real loss(const std::vector<int32_t>& labels, real lr, Model *model_);
   NodeProb getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>>& n_queue,
                         Vector& hidden, const Model *model_);
