@@ -38,10 +38,10 @@ if [ ! -e $TRAIN ]; then
 fi
 
 mkdir -p models
-MODEL="models/${FILES_PREFIX}_$(echo $PARAMS | tr ' ' '_')"
+MODEL="models/${FILES_PREFIX}_$(echo $PARAMS | tr ' /' '__')"
 
 mkdir -p output
-OUTPUT="output/${FILES_PREFIX}_$(echo $PARAMS | tr ' ' '_').out"
+OUTPUT="output/${FILES_PREFIX}_$(echo $PARAMS | tr ' /' '__').out"
 SUMMARY_OUTPUT="output/${FILES_PREFIX}.out"
 
 if [ ! -e $SUMMARY_OUTPUT ]; then
@@ -76,7 +76,6 @@ grep "P@5" $OUTPUT | cut -d " " -f 2 | tr "\n" "," >> $SUMMARY_OUTPUT
 grep "user" $OUTPUT | cut -f 2 | tr "\n" "," >> $SUMMARY_OUTPUT
 #grep "Model size" $OUTPUT | cut -d " " -f 3 | tr "\n" "," >> $SUMMARY_OUTPUT
 grep "Model size" $OUTPUT | cut -d " " -f 3 >> $SUMMARY_OUTPUT
-echo "" >> $SUMMARY_OUTPUT
 
 # Model quantization
 #if [ ! -e ${MODEL}.ftz ]; then

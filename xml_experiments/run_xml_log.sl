@@ -6,4 +6,4 @@
 #SBATCH -p standard
 #PBS -A 243
 
-bash run_xml_log.sh $@
+bash run_xml_log.sh $1 $2 "${@:3}"
