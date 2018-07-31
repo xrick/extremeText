@@ -99,6 +99,7 @@ class PLT: public LossLayer{
   void buildHuffmanPLTree(const std::vector<int64_t>&);
   void buildKMeansPLTree(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
   void loadTreeStructure(std::string filename);
+  void saveTreeStructure(std::string filename);
 
   NodePLT* createNode(NodePLT *parent = nullptr, int32_t label = -1);
 

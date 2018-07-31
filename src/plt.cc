@@ -275,6 +275,22 @@ void PLT::loadTreeStructure(std::string filename){
     assert(tree_leaves.size() == k);
   }
 
+void PLT::saveTreeStructure(std::string filename){
+    if(args_->verbose > 2)
+        std::cout << "  Saving PLT structure to file ...\n";
+    std::ofstream treefile(filename);
+
+    treefile << k << " " << t << std::endl;
+
+    for (auto i = 0; i < t; ++i) {
+        NodePLT *n = tree[i];
+        if(n->parent != nullptr)
+            treefile << n->parent->index << " " << n->index << " " << n->label << std::endl;
+    }
+
+    treefile.close();
+}
+
 real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
 
     //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->index));
@@ -343,12 +359,22 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 
     // PLT's node selection
     if (labels.size() > 0) {
-        for (uint32_t i = 0; i < labels.size(); ++i) {
-            NodePLT *n = tree_leaves[labels[i]];
+        if(args_->pickOne){
+            std::uniform_int_distribution<> uniform(0, labels.size() -1);
+            NodePLT *n = tree_leaves[labels[uniform(rng)]];
             n_positive.insert(n);
             while (n->parent) {
                 n = n->parent;
                 n_positive.insert(n);
+            }
+        } else {
+            for (uint32_t i = 0; i < labels.size(); ++i) {
+                NodePLT *n = tree_leaves[labels[i]];
+                n_positive.insert(n);
+                while (n->parent) {
+                    n = n->parent;
+                    n_positive.insert(n);
+                }
             }
         }
 
@@ -508,7 +534,6 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
 void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
   rng.seed(seed);
-  std::cout << seed << "\n";
 
   if(args_->treeStructure != ""){
     args_->treeType = tree_type_name::custom;
@@ -563,6 +588,8 @@ void PLT::save(std::ostream& out){
 
         out.write((char*) &parent_n, sizeof(parent_n));
     }
+
+    saveTreeStructure(args_->output + ".tree");
 }
 
 void PLT::load(std::istream& in){

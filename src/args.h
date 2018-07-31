@@ -78,6 +78,7 @@ class Args {
     std::string treeStructure;
     bool randomTree;
     int maxLeaves;
+    bool pickOne;
 
     // KMeans
     double kMeansEps;
