@@ -79,6 +79,7 @@ class Args {
     bool randomTree;
     int maxLeaves;
     bool pickOne;
+    bool oldUpdate;
 
     // KMeans
     double kMeansEps;

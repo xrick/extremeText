@@ -54,15 +54,15 @@ date > $OUTPUT
 echo $PARAMS >> $OUTPUT
 echo "" >> $OUTPUT
 
-# Train model
 if [ ! -e ${MODEL}.bin ]; then
+    # Train model
     { time $BIN supervised -input $TRAIN -output $MODEL -loss plt $PARAMS -thread $THREADS ; } >> $OUTPUT 2>&1
-fi
 
-# Test model
-{ time $BIN test ${MODEL}.bin ${TEST} 1 ; } >> $OUTPUT 2>&1
-{ time $BIN test ${MODEL}.bin ${TEST} 3 ; } >> $OUTPUT 2>&1
-{ time $BIN test ${MODEL}.bin ${TEST} 5 ; } >> $OUTPUT 2>&1
+    # Test model
+    { time $BIN test ${MODEL}.bin ${TEST} 1 ; } >> $OUTPUT 2>&1
+    { time $BIN test ${MODEL}.bin ${TEST} 3 ; } >> $OUTPUT 2>&1
+    { time $BIN test ${MODEL}.bin ${TEST} 5 ; } >> $OUTPUT 2>&1
+fi
 
 echo "Model: ${MODEL}.bin" >> $OUTPUT
 echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)" >> $OUTPUT

@@ -301,13 +301,11 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     real diff = (label - score);
 
     // Original update
-    /*
-    real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->ensemble)
-    model_->wo_->addRow(model_->hidden_, shift + n->index, alpha);
-     */
-
-    if(args_->fobos){
+    if(args_->oldUpdate){
+        real alpha = lr * (label - score);
+        model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->ensemble);
+        model_->wo_->addRow(model_->hidden_, shift + n->index, alpha);
+    } else if(args_->fobos){
         model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->index, lr, diff / args_->ensemble, l2);
         model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->index, lr, diff, l2);
     } else {

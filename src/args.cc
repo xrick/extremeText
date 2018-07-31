@@ -69,6 +69,7 @@ Args::Args() {
   probNorm = false;
   maxLeaves = 100;
   pickOne = false;
+  oldUpdate = false;
 
   // KMeans
   kMeansEps = 0.0001;
@@ -257,6 +258,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         ai--;
       } else if (args[ai] == "-pickOne") {
         pickOne = true;
+        ai--;
+      } else if (args[ai] == "-oldUpdate") {
+        oldUpdate = true;
         ai--;
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
