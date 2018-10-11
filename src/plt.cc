@@ -446,15 +446,15 @@ NodeProb PLT::getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, s
     }
 }
 
-void PLT::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
+void PLT::findKBest(int32_t top_k, real threshold, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
     std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
     n_queue.push({tree_root, predictNode(tree_root, hidden, model_)});
 
     for(int i = 0; i < top_k; ++i) {
         NodeProb np = getNextBest(n_queue, hidden, model_);
+        if(np.prob < threshold) break;
         heap.push_back({np.prob, np.node->label});
     }
-    assert(heap.size() == top_k);
 }
 
 real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
@@ -508,7 +508,6 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
 void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
   rng.seed(seed);
-  std::cout << seed << "\n";
 
   if(args_->treeStructure != ""){
     args_->treeType = tree_type_name::custom;

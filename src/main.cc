@@ -24,6 +24,7 @@ void printUsage() {
     << "  test                    evaluate a supervised classifier\n"
     << "  predict                 predict most likely labels\n"
     << "  predict-prob            predict most likely labels with probabilities\n"
+    << "  get-prob                predict probabilities for given labels"
     << "  skipgram                train a skipgram model\n"
     << "  cbow                    train a cbow model\n"
     << "  print-word-vectors      print word vectors given a trained model\n"
@@ -53,11 +54,13 @@ void printTestUsage() {
 
 void printPredictUsage() {
   std::cerr
-    << "usage: fasttext predict[-prob] <model> <test-data> [<k>] [<th>]\n\n"
+    << "usage: fasttext predict[-prob] <model> <test-data> [<k>] [<th>] [<output>] [<thread>]\n\n"
     << "  <model>      model filename\n"
     << "  <test-data>  test data filename (if -, read from stdin)\n"
     << "  <k>          (optional; 1 by default) predict top k labels\n"
     << "  <th>         (optional; 0.0 by default) probability threshold\n"
+    << "  <output>     (optional; stdout by default) output file name (required by thread options)\n"
+    << "  <thread>     (optional; #cpu by default) number of threads\n"
     << std::endl;
 }
 
@@ -120,6 +123,17 @@ void printDumpUsage() {
     << "usage: fasttext dump <model> <option>\n\n"
     << "  <model>      model filename\n"
     << "  <option>     option from args,dict,input,output"
+    << std::endl;
+}
+
+void printGetProbUsage() {
+  std::cout
+    << "usage: fasttext get-prob <model> <input> [<th>] [<output>] [<thread>]\n\n"
+    << "  <model>      model filename\n"
+    << "  <data>       input file name\n"
+    << "  <th>         (optional; 0.0 by default) probability threshold\n"
+    << "  <output>     (optional; stdout by default) output file name (required by thread options)\n"
+    << "  <thread>     (optional; #cpu by default) number of threads\n"
     << std::endl;
 }
 
@@ -197,18 +211,17 @@ void predict(const std::vector<std::string>& args) {
       std::cerr << "Input file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    if(args.size() < 6) fasttext.predict(ifs, k, print_prob, threshold);
+    if(thread == 1) fasttext.predict(ifs, k, print_prob, threshold);
     ifs.close();
-    if(args.size() >= 6) fasttext.startPredictThreads(infile, outfile, thread, k, print_prob, threshold);
+    if(thread > 1) fasttext.startPredictThreads(infile, outfile, thread, k, print_prob, threshold);
   }
 
   exit(0);
 }
 
 void getProb(const std::vector<std::string>& args){
-  //TODO: Add usage
-  if (args.size() < 4 || args.size() > 6) {
-    //printPredictUsage();
+  if (args.size() < 4 || args.size() > 7) {
+    printGetProbUsage();
     exit(EXIT_FAILURE);
   }
 
@@ -217,22 +230,26 @@ void getProb(const std::vector<std::string>& args){
   std::string infile(args[3]);
   std::string outfile = "";
   int32_t thread = utils::cpuCount();
+  real threshold = 0.0;
   if(args.size() > 4)
-    outfile = std::string(args[4]);
+    threshold = std::stof(args[4]);
   if(args.size() > 5)
-    thread = std::stoi(args[5]);
+    outfile = std::string(args[5]);
+  if(args.size() > 6)
+    thread = std::stoi(args[6]);
+
 
   if (infile == "-") {
-    fasttext.getProb(std::cin);
+    fasttext.getProb(std::cin, threshold);
   } else {
     std::ifstream ifs(infile);
     if (!ifs.is_open()) {
       std::cerr << "Input file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    if(args.size() < 4) fasttext.getProb(ifs);
+    if(thread == 1) fasttext.getProb(ifs, threshold);
     ifs.close();
-    if(args.size() >= 4) fasttext.startGetProbThreads(infile, outfile, thread);
+    if(thread > 1) fasttext.startGetProbThreads(infile, outfile, thread, threshold);
   }
 
   exit(0);

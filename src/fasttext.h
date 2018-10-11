@@ -111,9 +111,10 @@ class FastText {
       real = 0.0) const;
 
   // Get prob command
-  void getProb(std::istream&);
-  void startGetProbThreads(std::string, std::string, int32_t);
-  void getProbThread(int32_t, int32_t, std::string, std::string);
+  void getProb(std::istream&, real);
+  void startGetProbThreads(std::string, std::string, int32_t, real);
+  void getProbThread(int32_t, int32_t, std::string, std::string, real);
+  void outputProb(std::ostream&, Vector&, std::vector<int32_t>&, std::vector<std::string>&, real);
   void ngramVectors(std::string);
 
   void precomputeWordVectors(Matrix&);

@@ -166,7 +166,7 @@ void Model::predict(int32_t k, real threshold, std::vector<std::pair<real, int32
   }
 
   if (lossLayer_ != nullptr){
-    lossLayer_->findKBest(k, heap, hidden, this);
+    lossLayer_->findKBest(k, threshold, heap, hidden, this);
   }
   else if (args_->loss == loss_name::hs) {
     dfs(k, threshold, 2 * osz_ - 2, 0.0, heap, hidden);

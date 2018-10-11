@@ -8,6 +8,7 @@
  */
 
 #include "args.h"
+#include "utils.h"
 
 #include <stdlib.h>
 
@@ -32,7 +33,7 @@ Args::Args() {
   bucket = 2000000;
   minn = 3;
   maxn = 6;
-  thread = 12;
+  thread = utils::cpuCount();
   lrUpdateRate = 100;
   t = 1e-4;
   label = "__label__";
@@ -364,7 +365,7 @@ void Args::printInfo(){
   }
   if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << ", bagging ratio: " << bagging << "\n";
   std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch
-            << ", buckets: " << bucket << ", neg: " << neg << "\n";
+    << ", buckets: " << bucket << ", neg: " << neg << "\n";
   //std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
 }
 

@@ -35,7 +35,7 @@ public:
     virtual real loss(int32_t target, real lr, Model *model_);
     virtual real loss(const std::vector <int32_t> &labels, real lr, Model *model_);
     virtual real loss(const std::vector <int32_t> &input, const std::vector <int32_t> &labels, real lr, Model *model_);
-    virtual void findKBest(int32_t top_k, std::vector <std::pair<real, int32_t>> &heap, Vector &hidden, const Model *model_) = 0;
+    virtual void findKBest(int32_t top_k, real threshold, std::vector <std::pair<real, int32_t>> &heap, Vector &hidden, const Model *model_) = 0;
     virtual real getLabelP(int32_t label, Vector &hidden, const Model *model_);
 
     virtual void save(std::ostream&) = 0;

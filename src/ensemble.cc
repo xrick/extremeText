@@ -57,13 +57,13 @@ real Ensemble::loss(const std::vector <int32_t> &input, const std::vector<int32_
     return lossSum/args_->ensemble;
 }
 
-void Ensemble::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_){
+void Ensemble::findKBest(int32_t top_k, real threshold, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_){
     std::unordered_map <int32_t, real> label_freq;
     std::set<int32_t> label_set;
 
     for(int i=0; i < args_->ensemble; i++ ){
         heap.clear();
-        baseLayers[i]->findKBest(top_k, heap, hidden, model_);
+        baseLayers[i]->findKBest(top_k, 0.0, heap, hidden, model_);
 
         for(auto const& value: heap) {
             label_set.insert(value.second);
@@ -80,11 +80,13 @@ void Ensemble::findKBest(int32_t top_k, std::vector<std::pair<real, int32_t>>& h
         }
     }
 
-    for(const auto& elem: label_freq)
-        heap.push_back(std::make_pair(elem.second / ((real)args_->ensemble), elem.first));
+    for(const auto& elem: label_freq){
+        real elem_prob = elem.second / ((real)args_->ensemble);
+        if(elem_prob >= threshold) heap.push_back(std::make_pair(elem_prob, elem.first));
+    }
 
     std::sort(heap.rbegin(), heap.rend());
-    heap.resize(top_k);
+    if(top_k < heap.size()) heap.resize(top_k);
 }
 
 int32_t Ensemble::getSize(){
