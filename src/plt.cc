@@ -600,7 +600,7 @@ void PLT::load(std::istream& in){
     }
 
     if(args_->verbose > 2)
-        std::cout << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+        std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
 }
 
 }

@@ -2,7 +2,7 @@
 
 extremeText is an extension of fastText library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
-It adds new options for fastText supervised command:
+extremeText adds new options for fastText supervised command:
 
 ```
 $ ./fasttext supervised
@@ -18,10 +18,6 @@ With the following optional arguments:
   -tf-idf             calculates tf-idf weights for words
   -wordsWeights       reads words weights from file (format: <word>:<weights>)
 ```
-
-This fork also modifies prediction command to make it work in parallel.
-
-More examples and scripts to replicate results on datasets from [The Extreme Classification Repository](http://manikvarma.org/downloads/XC/XMLRepository.html) can be found in the [xml_experiments](https://github.com/mwydmuch/extremeText) directory.
 
 
 # fastText README.md

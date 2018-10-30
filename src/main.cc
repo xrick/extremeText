@@ -33,6 +33,8 @@ void printUsage() {
     << "  nn                      query for nearest neighbors\n"
     << "  analogies               query for analogies\n"
     << "  dump                    dump arguments,dictionary,input/output vectors\n"
+//    << "  save-word-vectors       save word vectors given a trained model\n"
+//    << "  save-document-vectors   save document vectors given an input file and trained model\n"
     << std::endl;
 }
 
@@ -59,7 +61,7 @@ void printPredictUsage() {
     << "  <test-data>  test data filename (if -, read from stdin)\n"
     << "  <k>          (optional; 1 by default) predict top k labels\n"
     << "  <th>         (optional; 0.0 by default) probability threshold\n"
-    << "  <output>     (optional; stdout by default) output file name (required by thread options)\n"
+    << "  <output>     (optional; stdout by default) output filename (required by thread options)\n"
     << "  <thread>     (optional; #cpu by default) number of threads\n"
     << std::endl;
 }
@@ -130,11 +132,28 @@ void printGetProbUsage() {
   std::cout
     << "usage: fasttext get-prob <model> <input> [<th>] [<output>] [<thread>]\n\n"
     << "  <model>      model filename\n"
-    << "  <data>       input file name\n"
+    << "  <data>       input filename\n"
     << "  <th>         (optional; 0.0 by default) probability threshold\n"
-    << "  <output>     (optional; stdout by default) output file name (required by thread options)\n"
+    << "  <output>     (optional; stdout by default) output filename (required by thread options)\n"
     << "  <thread>     (optional; #cpu by default) number of threads\n"
     << std::endl;
+}
+
+void printSaveWordVectorsUsage() {
+  std::cout
+    << "usage: fasttext <model> [<output>]\n\n"
+    << "  <model>      model filename\n"
+    << "  <output>     (optional; stdout by default) output filename\n"
+    << std::endl;
+}
+
+void printSaveDocumentVectorsUsage() {
+    std::cout
+      << "usage: fasttext <model> [<output>]\n\n"
+      << "  <model>      model filename\n"
+      << "  <data>       input filename with documents\n"
+      << "  <output>     (optional; stdout by default) output filename\n"
+      << std::endl;
 }
 
 void test(const std::vector<std::string>& args) {
@@ -173,9 +192,6 @@ void test(const std::vector<std::string>& args) {
   std::cout << "P@" << k << ": " << std::get<1>(result) << std::endl;
   std::cout << "R@" << k << ": " << std::get<2>(result) << std::endl;
   std::cout << "C@" << k << ": " << std::get<3>(result) << std::endl;
-
-  if (fasttext.getArgs().saveDocuments)
-    fasttext.saveDocuments(args[3], args[2], "test");
 }
 
 void predict(const std::vector<std::string>& args) {
@@ -354,7 +370,7 @@ void train(const std::vector<std::string> args) {
   a.train = true;
   a.parseArgs(args);
   FastText fasttext;
-  std::ofstream ofs(a.output+".bin");
+  std::ofstream ofs(a.output + ".bin");
   if (!ofs.is_open()) {
     throw std::invalid_argument(a.output + ".bin cannot be opened for saving.");
   }
@@ -363,10 +379,11 @@ void train(const std::vector<std::string> args) {
   fasttext.saveModel();
   if (a.saveVectors)
     fasttext.saveVectors();
+    //fasttext.saveVectors(a.output + ".vec");
   if (a.saveOutput)
     fasttext.saveOutput();
-  if (a.saveDocuments)
-    fasttext.saveDocuments(a.input, a.output, "train");
+  //if (a.saveDocuments)
+    //fasttext.saveDocuments(a.input, a.output + ".vec");
 }
 
 void dump(const std::vector<std::string>& args) {
@@ -402,14 +419,27 @@ void dump(const std::vector<std::string>& args) {
   }
 }
 
-void saveAll(const std::vector<std::string>& args) {
+// TODO
+void saveWordVectors(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        printSaveWordVectorsUsage();
+        exit(EXIT_FAILURE);
+    }
+
     FastText fasttext;
     fasttext.loadModel(args[2]);
+    //fasttext.saveVectors(args[3]);
+}
 
-    std::string infile = args[3];
-    //fasttext.saveOutput();
-    //fasttext.saveVectors();
-    fasttext.saveDocuments(args[3], args[2], args[4]);
+void saveDocumentVectors(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        printSaveDocumentVectorsUsage();
+        exit(EXIT_FAILURE);
+    }
+
+    FastText fasttext;
+    fasttext.loadModel(args[2]);
+    //fasttext.saveDocuments(args[3], args[4]);
 }
 
 int main(int argc, char** argv) {
@@ -441,8 +471,10 @@ int main(int argc, char** argv) {
     getProb(args);
   } else if (command == "dump") {
     dump(args);
-  } else if (command == "save-all") {
-    saveAll(args);
+//  } else if (command == "save-word-vectors") {
+//    saveWordVectors(args);
+//  } else if (command == "save-document-vectors") {
+//    saveDocumentVectors(args);
   } else {
     printUsage();
     exit(EXIT_FAILURE);
