@@ -17,8 +17,8 @@ using namespace fasttext;
 
 void printUsage() {
   std::cerr
-    << "usage: fasttext <command> <args>\n\n"
-    << "The commands supported by fasttext are:\n\n"
+    << "usage: extremetext <command> <args>\n\n"
+    << "The commands supported by extremetext are:\n\n"
     << "  supervised              train a supervised classifier\n"
     << "  quantize                quantize a model to reduce the memory usage\n"
     << "  test                    evaluate a supervised classifier\n"
@@ -40,13 +40,13 @@ void printUsage() {
 
 void printQuantizeUsage() {
   std::cerr
-    << "usage: fasttext quantize <args>"
+    << "usage: extremetext quantize <args>"
     << std::endl;
 }
 
 void printTestUsage() {
   std::cerr
-    << "usage: fasttext test <model> <test-data> [<k>] [<th>]\n\n"
+    << "usage: extremetext test <model> <test-data> [<k>] [<th>]\n\n"
     << "  <model>      model filename\n"
     << "  <test-data>  test data filename (if -, read from stdin)\n"
     << "  <k>          (optional; 1 by default) predict top k labels\n"
@@ -56,7 +56,7 @@ void printTestUsage() {
 
 void printPredictUsage() {
   std::cerr
-    << "usage: fasttext predict[-prob] <model> <test-data> [<k>] [<th>] [<output>] [<thread>]\n\n"
+    << "usage: extremetext predict[-prob] <model> <test-data> [<k>] [<th>] [<output>] [<thread>]\n\n"
     << "  <model>      model filename\n"
     << "  <test-data>  test data filename (if -, read from stdin)\n"
     << "  <k>          (optional; 1 by default) predict top k labels\n"
@@ -68,21 +68,21 @@ void printPredictUsage() {
 
 void printPrintWordVectorsUsage() {
   std::cerr
-    << "usage: fasttext print-word-vectors <model>\n\n"
+    << "usage: extremetext print-word-vectors <model>\n\n"
     << "  <model>      model filename\n"
     << std::endl;
 }
 
 void printPrintSentenceVectorsUsage() {
   std::cerr
-    << "usage: fasttext print-sentence-vectors <model>\n\n"
+    << "usage: extremetext print-sentence-vectors <model>\n\n"
     << "  <model>      model filename\n"
     << std::endl;
 }
 
 void printPrintNgramsUsage() {
   std::cerr
-    << "usage: fasttext print-ngrams <model> <word>\n\n"
+    << "usage: extremetext print-ngrams <model> <word>\n\n"
     << "  <model>      model filename\n"
     << "  <word>       word to print\n"
     << std::endl;
@@ -106,7 +106,7 @@ void quantize(const std::vector<std::string>& args) {
 
 void printNNUsage() {
   std::cout
-    << "usage: fasttext nn <model> <k>\n\n"
+    << "usage: extremetext nn <model> <k>\n\n"
     << "  <model>      model filename\n"
     << "  <k>          (optional; 10 by default) predict top k labels\n"
     << std::endl;
@@ -114,7 +114,7 @@ void printNNUsage() {
 
 void printAnalogiesUsage() {
   std::cout
-    << "usage: fasttext analogies <model> <k>\n\n"
+    << "usage: extremetext analogies <model> <k>\n\n"
     << "  <model>      model filename\n"
     << "  <k>          (optional; 10 by default) predict top k labels\n"
     << std::endl;
@@ -122,7 +122,7 @@ void printAnalogiesUsage() {
 
 void printDumpUsage() {
   std::cout
-    << "usage: fasttext dump <model> <option>\n\n"
+    << "usage: extremetext dump <model> <option>\n\n"
     << "  <model>      model filename\n"
     << "  <option>     option from args,dict,input,output"
     << std::endl;
@@ -130,7 +130,7 @@ void printDumpUsage() {
 
 void printGetProbUsage() {
   std::cout
-    << "usage: fasttext get-prob <model> <input> [<th>] [<output>] [<thread>]\n\n"
+    << "usage: extremetext get-prob <model> <input> [<th>] [<output>] [<thread>]\n\n"
     << "  <model>      model filename\n"
     << "  <data>       input filename\n"
     << "  <th>         (optional; 0.0 by default) probability threshold\n"
@@ -141,7 +141,7 @@ void printGetProbUsage() {
 
 void printSaveWordVectorsUsage() {
   std::cout
-    << "usage: fasttext <model> [<output>]\n\n"
+    << "usage: extremetext <model> [<output>]\n\n"
     << "  <model>      model filename\n"
     << "  <output>     (optional; stdout by default) output filename\n"
     << std::endl;
@@ -149,7 +149,7 @@ void printSaveWordVectorsUsage() {
 
 void printSaveDocumentVectorsUsage() {
     std::cout
-      << "usage: fasttext <model> [<output>]\n\n"
+      << "usage: extremetext <model> [<output>]\n\n"
       << "  <model>      model filename\n"
       << "  <data>       input filename with documents\n"
       << "  <output>     (optional; stdout by default) output filename\n"

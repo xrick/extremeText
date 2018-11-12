@@ -4,6 +4,7 @@
 *.vec
 data
 fasttext
+extremetext
 result
 .idea
 .DS_Store

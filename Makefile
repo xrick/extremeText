@@ -13,10 +13,10 @@ OBJS = args.o dictionary.o productquantizer.o matrix.o qmatrix.o vector.o model.
 INCLUDES = -I.
 
 opt: CXXFLAGS += -O3 -funroll-loops
-opt: fasttext
+opt: extremetext
 
 debug: CXXFLAGS += -g -O0 -fno-inline
-debug: fasttext
+debug: extremetext
 
 args.o: src/args.cc src/args.h
 	$(CXX) $(CXXFLAGS) -c src/args.cc
@@ -57,8 +57,8 @@ kmeans.o: src/kmeans.cc src/kmeans.h
 fasttext.o: src/fasttext.cc src/*.h
 	$(CXX) $(CXXFLAGS) -c src/fasttext.cc
 
-fasttext: $(OBJS) src/fasttext.cc
-	$(CXX) $(CXXFLAGS) $(OBJS) src/main.cc -o fasttext
+extremetext: $(OBJS) src/fasttext.cc
+	$(CXX) $(CXXFLAGS) $(OBJS) src/main.cc -o extremetext
 
 clean:
-	rm -rf *.o fasttext
+	rm -rf *.o extremetext

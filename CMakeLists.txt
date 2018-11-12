@@ -8,13 +8,13 @@
 #
 
 cmake_minimum_required(VERSION 2.8.9)
-project(fasttext)
+project(extremetext)
 
 # The version number.
-set (fasttext_VERSION_MAJOR 0)
-set (fasttext_VERSION_MINOR 1)
+set (extremetext_VERSION_MAJOR 0)
+set (extremetext_VERSION_MINOR 1)
 
-include_directories(fasttext)
+include_directories(extremetext)
 
 set(CMAKE_CXX_FLAGS " -pthread -std=c++11 -funroll-loops -O3 -march=native")
 
@@ -22,7 +22,7 @@ set(HEADER_FILES
     src/args.h
     src/ensemble.h
     src/dictionary.h
-    src/fasttext.h
+    src/extremetext.h
     src/kmeans.h
     src/losslayer.h
     src/matrix.h
@@ -40,7 +40,7 @@ set(SOURCE_FILES
     src/args.cc
     src/ensemble.cc
     src/dictionary.cc
-    src/fasttext.cc
+    src/extremetext.cc
     src/kmeans.cc
     src/losslayer.cc
     src/main.cc
@@ -52,22 +52,22 @@ set(SOURCE_FILES
     src/utils.cc
     src/vector.cc)
 
-add_library(fasttext-shared SHARED ${SOURCE_FILES} ${HEADER_FILES})
-add_library(fasttext-static STATIC ${SOURCE_FILES} ${HEADER_FILES})
-add_library(fasttext-static_pic STATIC ${SOURCE_FILES} ${HEADER_FILES})
-set_target_properties(fasttext-shared PROPERTIES OUTPUT_NAME fasttext)
-set_target_properties(fasttext-static PROPERTIES OUTPUT_NAME fasttext)
-set_target_properties(fasttext-static_pic PROPERTIES OUTPUT_NAME fasttext_pic
-  POSITION_INDEPENDENT_CODE True)
-add_executable(fasttext-bin src/main.cc)
-target_link_libraries(fasttext-bin pthread fasttext-static)
-set_target_properties(fasttext-bin PROPERTIES PUBLIC_HEADER "${HEADER_FILES}" OUTPUT_NAME fasttext)
-install (TARGETS fasttext-shared
+add_library(extremetext-shared SHARED ${SOURCE_FILES} ${HEADER_FILES})
+add_library(extremetext-static STATIC ${SOURCE_FILES} ${HEADER_FILES})
+add_library(extremetext-static_pic STATIC ${SOURCE_FILES} ${HEADER_FILES})
+set_target_properties(extremetext-shared PROPERTIES OUTPUT_NAME extremetext)
+set_target_properties(extremetext-static PROPERTIES OUTPUT_NAME extremetext)
+set_target_properties(extremetext-static_pic PROPERTIES OUTPUT_NAME extremetext_pic
+    POSITION_INDEPENDENT_CODE True)
+add_executable(extremetext-bin src/main.cc)
+target_link_libraries(extremetext-bin pthread extremetext-static)
+set_target_properties(extremetext-bin PROPERTIES PUBLIC_HEADER "${HEADER_FILES}" OUTPUT_NAME extremetext)
+install (TARGETS extremetext-shared
     LIBRARY DESTINATION lib)
-install (TARGETS fasttext-static
+install (TARGETS extremetext-static
     ARCHIVE DESTINATION lib)
-install (TARGETS fasttext-static_pic
+install (TARGETS extremetext-static_pic
     ARCHIVE DESTINATION lib)
-install (TARGETS fasttext-bin
+install (TARGETS extremetext-bin
     RUNTIME DESTINATION bin
- PUBLIC_HEADER DESTINATION include/fasttext)
+    PUBLIC_HEADER DESTINATION include/extremetext)
