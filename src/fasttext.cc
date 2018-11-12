@@ -23,8 +23,8 @@
 
 namespace fasttext {
 
-constexpr int32_t FASTTEXT_VERSION = 1410; /* extremeText Version E 1.0 */
-constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 1410;
+constexpr int32_t FASTTEXT_VERSION = 14101; /* extremeText Version E1.0.1 */
+constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 14101;
 
 FastText::FastText() : quant_(false) {}
 
@@ -149,6 +149,7 @@ void FastText::saveDocuments(const std::string input, const std::string output, 
 
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
+  std::vector<std::string> tags;
   Vector hidden_(args_->dim);
 
   uint32_t docs = 0;
@@ -160,8 +161,7 @@ void FastText::saveDocuments(const std::string input, const std::string output, 
   ofs << docs << " " << args_->dim << " " << dict_->nlabels() << "\n";
 
   for (int32_t i = 0; i < docs; i++) {
-    if(args_->tfidf) dict_->getLineTfIdf(ifs, line, line_values, labels);
-    else dict_->getLine(ifs, line, line_values, labels);
+    dict_->getLine(ifs, line, line_values, labels, tags);
     model_->computeHidden(line, line_values, hidden_);
 
     if(labels.size()){
@@ -444,11 +444,9 @@ std::tuple<uint64_t, double, double, double> FastText::test(
   std::unordered_set<int32_t> coverage;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
+  std::vector<std::string> tags;
   while (in.peek() != EOF) {
-    if(args_->tfidf)
-      dict_->getLineTfIdf(in, line, line_values, labels);
-    else
-      dict_->getLine(in, line, line_values, labels);
+    dict_->getLine(in, line, line_values, labels, tags);
     if (labels.size() > 0 && line.size() > 0) {
       std::vector<std::pair<real, int32_t>> modelPredictions;
       model_->predict(line, line_values, k, threshold, modelPredictions);
@@ -508,8 +506,7 @@ void FastText::predictThread(
   Vector output(dict_->nlabels());
 
   while (ifs.peek() != EOF) {
-    if (args_->tfidf) dict_->getLineTfIdf(ifs, words, words_values, labels); //TODO: upgrade TfIdf
-    else dict_->getLine(ifs, words, words_values, labels, tags);
+    dict_->getLine(ifs, words, words_values, labels, tags);
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
     modelPredictions.clear();
@@ -540,8 +537,8 @@ void FastText::predict(
 ) const {
   std::vector<int32_t> words, labels;
   std::vector<real> words_values;
-  if(args_->tfidf) dict_->getLineTfIdf(in, words, words_values, labels);
-  else dict_->getLine(in, words, words_values, labels);
+  std::vector<std::string> tags;
+  dict_->getLine(in, words, words_values, labels, tags);
 
   predictions.clear();
   if (words.empty()) return;
@@ -610,8 +607,7 @@ void FastText::getProbThread(int32_t threadId, int32_t thread, std::string infil
   std::vector<std::string> tags;
   Vector hidden(args_->dim);
   while (ifs.peek() != EOF) {
-    if (args_->tfidf) dict_->getLineTfIdf(ifs, words, words_values, labels); //TODO: upgrade TfIdf
-    else dict_->getLine(ifs, words, words_values, labels, tags);
+    dict_->getLine(ifs, words, words_values, labels, tags);
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
     model_->computeHidden(words, words_values, hidden);
@@ -639,9 +635,7 @@ void FastText::getProb(std::istream& in, real threshold) {
   std::vector<std::string> tags;
   Vector hidden(args_->dim);
   while (in.peek() != EOF) {
-    if (args_->tfidf) dict_->getLineTfIdf(in, words, words_values, labels); //TODO: upgrade TfIdf
-    else dict_->getLine(in, words, words_values, labels, tags);
-
+    dict_->getLine(in, words, words_values, labels, tags);
     model_->computeHidden(words, words_values, hidden);
     outputProb(std::cout, hidden, labels, tags, threshold);
   }
@@ -651,10 +645,11 @@ void FastText::getSentenceVector(
     std::istream& in,
     fasttext::Vector& svec) {
   svec.zero();
+  std::vector<std::string> tags;
   if (args_->model == model_name::sup) {
     std::vector<int32_t> line, labels;
     std::vector<real> line_values;
-    dict_->getLine(in, line, line_values, labels);
+    dict_->getLine(in, line, line_values, labels, tags);
     for (int32_t i = 0; i < line.size(); i++) {
       addInputVector(svec, line[i]);
     }
@@ -790,25 +785,28 @@ void FastText::trainThread(int32_t threadId) {
 
   const int64_t ntokens = dict_->ntokens();
   int64_t localTokenCount = 0;
+  real weight = 1;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
+  std::vector<std::string> tags;
 
   while (tokenCount_ < args_->epoch * ntokens) {
     real progress = real(tokenCount_) / (args_->epoch * ntokens);
     real lr = args_->lr * (1.0 - progress);
     if (args_->model == model_name::sup) {
-      if(args_->tfidf)
-        localTokenCount += dict_->getLineTfIdf(ifs, line, line_values, labels);
-      else
-        localTokenCount += dict_->getLine(ifs, line, line_values, labels);
-      supervised(model, lr, line, line_values, labels);
+      weight = dict_->getLine(ifs, line, line_values, labels, tags);
+      localTokenCount += line.size() + labels.size();
+      supervised(model, weight * lr, line, line_values, labels);
     } else if (args_->model == model_name::cbow) {
-      localTokenCount += dict_->getLine(ifs, line, model.rng);
+      localTokenCount = dict_->getLine(ifs, line, model.rng);
+      //localTokenCount = line.size();
       cbow(model, lr, line);
     } else if (args_->model == model_name::sg) {
-      localTokenCount += dict_->getLine(ifs, line, model.rng);
+      localTokenCount = dict_->getLine(ifs, line, model.rng);
+      //localTokenCount = line.size();
       skipgram(model, lr, line);
     }
+
     if (localTokenCount > args_->lrUpdateRate) {
       tokenCount_ += localTokenCount;
       localTokenCount = 0;

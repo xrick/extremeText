@@ -5,13 +5,10 @@
 
 #include "losslayer.h"
 #include "model.h"
-
 #include "plt.h"
 #include "ensemble.h"
 
-
 namespace fasttext {
-
 
 std::shared_ptr<LossLayer> lossLayerFactory(std::shared_ptr<Args> args, loss_name loss){
     if (loss == loss_name::plt)

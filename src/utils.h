@@ -10,6 +10,7 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 #include <string>
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -30,6 +31,16 @@ namespace utils {
   std::string itos(int32_t, int32_t = 0);
   void printProgress(float progress, std::ostream& log_stream);
   uint32_t hash(const std::string& str);
+  void loadString(std::istream& in, std::string& str);
+  void saveString(std::ostream& out, std::string& str);
+
+  template <typename T>
+  void printVector(std::vector<T> vec, std::ostream& out_stream){
+    for(size_t i = 0; i < vec.size(); ++i) {
+        if(i != 0) out_stream << ", ";
+        out_stream << vec[i];
+    }
+  }
 }
 
 }

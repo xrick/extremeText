@@ -19,7 +19,7 @@
 namespace fasttext {
 
 enum class model_name : int { cbow = 1, sg, sup };
-enum class loss_name : int { hs = 1, ns, softmax, plt };
+enum class loss_name : int { hs = 1, ns, softmax, plt};
 enum class tree_type_name : int { huffman = 1, complete, kmeans, custom};
 
 class Args {
@@ -52,17 +52,23 @@ class Args {
     double t;
     std::string label;
     int verbose;
-    std::string pretrainedVectors;
     bool saveOutput;
     bool saveVectors;
     bool saveDocuments;
+
+    // Vectors init
+    std::string pretrainedVectors;
     bool freezeVectors;
     bool initZeros;
+
+    // Features args
     bool wordsWeights;
-    bool tfidf;
-    int bias = 0; // but works as bool (switch argument)
+    bool tfidfWeights;
+    bool addEosToken;
     bool labelsOrder;
     bool unitNorm;
+    std::string weight;
+    std::string tag;
 
     // Quantization args
     bool qout;

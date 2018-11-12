@@ -2,8 +2,8 @@
  * Copyright (c) 2012 by Jakob Progsch, Vaclav Zeman
  * All rights reserved.
  * https://github.com/progschj/ThreadPool
+ *
  * Modified by Marek Wydmuch
- * https://github.com/mwydmuch/napkinXML
  */
 
 #pragma once

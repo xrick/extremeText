@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2018 by Marek Wydmuch, Robert Istvan Busa-Fekete
+ * Copyright (c) 2018 by Marek Wydmuch, Róbert Busa-Fekete, Krzysztof Dembczyński
  * All rights reserved.
  */
-
-#include <iostream>
+ 
 #include <fstream>
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <sstream>
 #include <unordered_map>
-#include <unordered_set>
-#include <set>
 #include <algorithm>
-#include <vector>
-#include <queue>
 #include <list>
 #include <chrono>
 #include <random>
@@ -27,8 +22,6 @@
 #include "utils.h"
 
 namespace fasttext {
-
-// Comperators for priority queues
 
 PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
     multilabel = true;
@@ -48,26 +41,26 @@ PLT::~PLT() {
 
 void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
     if(args_->verbose > 2)
-        std::cout << "  Building PLT with Huffman tree ...\n";
+        std::cerr << "  Building PLT with Huffman tree ...\n";
 
     k = freq.size();
     t = 2 * k - 1; // size of the tree
 
-    std::priority_queue<NodeFreq, std::vector<NodeFreq>, std::greater<NodeFreq>> freqheap;
+    std::priority_queue<NodeFreq, std::vector<NodeFreq>, std::greater<NodeFreq>> freq_heap;
     for(int i = 0; i < k; ++i) {
         NodePLT *n = createNode(nullptr, i);
-        freqheap.push({n, freq[i]});
-
-        //std::cout << "Leaf: " << n->label << ", Node: " << n->n << ", Freq: " << freq[i] << "\n";
+        freq_heap.push({n, freq[i]});
+        
+        //std::cerr << "Leaf: " << n->label << ", Node: " << n->n << ", Freq: " << freq[i] << "\n";
     }
 
     while (true) {
         std::vector<NodeFreq> toMerge;
         for (int a = 0; a < args_->arity; ++a) {
-            NodeFreq tmp = freqheap.top();
-            freqheap.pop();
+            NodeFreq tmp = freq_heap.top();
+            freq_heap.pop();
             toMerge.push_back(tmp);
-            if (freqheap.empty()) break;
+            if (freq_heap.empty()) break;
         }
 
         NodePLT *parent = createNode();
@@ -79,22 +72,22 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
             aggregatedFrequency += e.freq;
         }
 
-        if (freqheap.empty()) {
+        if (freq_heap.empty()) {
             tree_root = parent;
             tree_root->parent = nullptr;
             break;
         }
 
-        freqheap.push({parent, aggregatedFrequency});
+        freq_heap.push({parent, aggregatedFrequency});
     }
 
     t = tree.size();
-    std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+    std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
 
 void PLT::buildCompletePLTree(int32_t k_) {
   if(args_->verbose > 2)
-    std::cout << "  Building PLT with complete tree ...\n";
+    std::cerr << "  Building PLT with complete tree ...\n";
 
   // Build complete tree
   k = k_;
@@ -126,7 +119,7 @@ void PLT::buildCompletePLTree(int32_t k_) {
   tree_root = tree[0];
   tree_root->parent = nullptr;
 
-  std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+  std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
   
 NodePartition nodeKMeansThread(NodePartition nPart, SRMatrix<Feature>& labelsFeatures, std::shared_ptr<Args> args, int seed){
@@ -148,15 +141,12 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
     std::vector<std::unordered_map<int32_t, real>> tmpLabelsFeatures(k);
     std::vector<int32_t> line, labels;
     std::vector<real> line_values;
+    std::vector<std::string> tags;
 
     int i = 0;
     while (ifs.peek() != EOF) {
       utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
-      if (args_->tfidf)
-        dict->getLineTfIdf(ifs, line, line_values, labels);
-      else
-        dict->getLine(ifs, line, line_values, labels);
-
+      dict->getLine(ifs, line, line_values, labels, tags);
       unitNorm(line_values.data(), line_values.size() - 1); // Left bias term untouched
       for(const auto& l : labels){
         for(int j = 0; j < line.size(); ++j){
@@ -239,7 +229,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
 
 void PLT::loadTreeStructure(std::string filename){
     if(args_->verbose > 2)
-      std::cout << "  Loading PLT structure from file ...\n";
+      std::cerr << "  Loading PLT structure from file ...\n";
     std::ifstream treefile(filename);
 
     treefile >> k >> t;
@@ -270,7 +260,7 @@ void PLT::loadTreeStructure(std::string filename){
     treefile.close();
 
     if(args_->verbose > 2)
-      std::cout << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+      std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
     assert(tree.size() == t);
     assert(tree_leaves.size() == k);
   }
@@ -402,7 +392,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
         loss += learnNode(n, label, lr, l2, model_);
     }
 
-    //std::cout << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";
+    //std::cerr << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";
     y_count += labels.size();
     ++x_count;
     return loss;
@@ -529,9 +519,9 @@ int32_t PLT::getSize(){
 }
 
 void PLT::printInfo(){
-  std::cout << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
-  std::cout << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
-  std::cout << "  Avg y: " << static_cast<float>(y_count) / x_count << "\n";
+  std::cerr << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
+  std::cerr << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
+  std::cerr << "  Avg y: " << static_cast<float>(y_count) / x_count << "\n";
 }
 
 void PLT::save(std::ostream& out){

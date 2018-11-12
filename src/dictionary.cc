@@ -47,7 +47,7 @@ int32_t Dictionary::find(const std::string& w, uint32_t h) const {
   return id;
 }
 
-void Dictionary::add(const std::string& w) {
+int32_t Dictionary::add(const std::string& w) {
   int32_t h = find(w);
   ntokens_++;
   if (word2int_[h] == -1) {
@@ -61,23 +61,12 @@ void Dictionary::add(const std::string& w) {
   } else {
     words_[word2int_[h]].count++;
   }
+
+  return h;
 }
 
 void Dictionary::add(const std::string& w, std::unordered_set<int32_t>& uniqWords) {
-  int32_t h = find(w);
-  ntokens_++;
-  if (word2int_[h] == -1) {
-    entry e;
-    e.word = w;
-    e.count = 1;
-    e.doc_count = 0;
-    e.type = getType(w);
-    words_.push_back(e);
-    word2int_[h] = size_++;
-  } else {
-    words_[word2int_[h]].count++;
-  }
-
+  int32_t h = add(w);
   if(!uniqWords.count(h)){
     words_[word2int_[h]].doc_count++;
     uniqWords.insert(h);
@@ -158,7 +147,7 @@ entry_type Dictionary::getType(int32_t id) const {
 }
 
 entry_type Dictionary::getType(const std::string& w) const {
-  return (w.find(args_->label) == 0) ? entry_type::label : entry_type::word;
+  return w.find(args_->label) == 0 ? entry_type::label : entry_type::word;
 }
 
 std::string Dictionary::getWord(int32_t id) const {
@@ -257,6 +246,9 @@ void Dictionary::readFromFile(std::istream& in) {
   int64_t minThreshold = 1;
   std::unordered_set<int32_t> uniqWords;
   while (readWord(in, word, value)) {
+    if(word == args_->weight || word.find(args_->tag) == 0){
+      continue;
+    }
     add(word, uniqWords);
     if(word == EOS) {
       uniqWords.clear();
@@ -405,21 +397,14 @@ int32_t Dictionary::getLine(std::istream& in,
   return ntokens;
 }
 
-int32_t Dictionary::getLine(std::istream& in,
-                            std::vector<int32_t>& words,
-                            std::vector<real>& words_values,
-                            std::vector<int32_t>& labels) const {
-  std::vector<std::string> tags;
-  return getLine(in, words, words_values, labels, tags);
-}
-
-int32_t Dictionary::getLine(std::istream& in,
+real Dictionary::getLine(std::istream& in,
                             std::vector<int32_t>& words,
                             std::vector<real>& words_values,
                             std::vector<int32_t>& labels,
                             std::vector<std::string>& tags) const {
   std::vector<int32_t> word_hashes;
   std::string token;
+  real weight = 1.0;
   real value;
   int32_t ntokens = 0;
 
@@ -428,8 +413,16 @@ int32_t Dictionary::getLine(std::istream& in,
   labels.clear();
   words_values.clear();
   tags.clear();
+
+  // for tf-idf
+  std::vector<int32_t> doc_counts;
+
   while (readWord(in, token, value)) {
-    if(token[0] == '#') {
+    if(token == args_->weight){
+      weight = value;
+      continue;
+    }
+    if(token.find(args_->tag) == 0) {
       tags.push_back(token);
       continue;
     }
@@ -440,8 +433,13 @@ int32_t Dictionary::getLine(std::istream& in,
 
     ntokens++;
     if (type == entry_type::word) {
-      addSubwords(words, token, words_values, value, wid);
-      word_hashes.push_back(h);
+      if (args_->tfidfWeights) {
+        addSubwordsTfIdf(words, token, doc_counts, wid);
+        // TODO: support for word hashes for tf-idf
+      } else {
+        addSubwords(words, token, words_values, value, wid);
+        word_hashes.push_back(h);
+      }
     } else if (type == entry_type::label && wid >= 0) {
       labels.push_back(wid - nwords_);
     }
@@ -455,105 +453,43 @@ int32_t Dictionary::getLine(std::istream& in,
     words_values.push_back(1);
    */
 
-  assert(words.size() == words_values.size());
-
   real values_sum = 0;
-  for(auto &it : words_values)
-    values_sum += it;
+  if(args_->tfidfWeights){
+    assert(words.size() == doc_counts.size());
+    int32_t nwords = words.size();
+    std::unordered_map<int32_t, std::pair<int32_t, int32_t>> counts;
+    for(auto i = 0; i < words.size(); ++i){
+      counts[words[i]].first++;
+      counts[words[i]].second = doc_counts[i];
+    }
+
+    words.clear();
+    for(auto it : counts){
+      words.push_back(it.first);
+      real tfidf = (static_cast<real>(it.second.first) / nwords) * std::log(static_cast<real>(ndocs_) / it.second.second);
+      words_values.push_back(tfidf);
+      values_sum += tfidf;
+    }
+  } else {
+    assert(words.size() == words_values.size());
+    for(auto &it : words_values)
+      values_sum += it;
+  }
 
   for(auto &it : words_values)
     it /= values_sum / words.size();
 
-  // Add bias word
+  // Add EOS word
   auto eosId = getId(EOS, utils::hash(EOS));
-  if(words.back() != eosId) {
+  if(args_->addEosToken && words.back() != eosId) {
     words.push_back(eosId);
     words_values.push_back(1.0);
+  } else if (words.back() == eosId){
+    words.pop_back();
+    words_values.pop_back();
   }
 
-  return ntokens;
-}
-
-int32_t Dictionary::getLineTfIdf(std::istream& in,
-                                 std::vector<int32_t>& words,
-                                 std::vector<real>& words_values,
-                                 std::vector<int32_t>& labels) const {
-  std::vector<std::string> tags;
-  return getLineTfIdf(in, words, words_values, labels, tags);
-}
-
-int32_t Dictionary::getLineTfIdf(std::istream& in,
-                                 std::vector<int32_t>& words,
-                                 std::vector<real>& words_values,
-                                 std::vector<int32_t>& labels,
-                                 std::vector<std::string>& tags) const {
-  std::string token;
-  real value;
-  int32_t ntokens = 0;
-
-  reset(in);
-  words.clear();
-  labels.clear();
-  words_values.clear();
-  std::vector<int32_t> doc_counts;
-  while (readWord(in, token, value)) {
-    if(token[0] == '#') {
-      tags.push_back(token);
-      continue;
-    }
-
-    if (token == EOS) break;
-
-    uint32_t h = utils::hash(token);
-    int32_t wid = getId(token, h);
-    entry_type type = wid < 0 ? getType(token) : getType(wid);
-
-    ntokens++;
-    if (type == entry_type::word) {
-      addSubwordsTfIdf(words, token, doc_counts, wid);
-    } else if (type == entry_type::label && wid >= 0) {
-      labels.push_back(wid - nwords_);
-    }
-    //if (token == EOS) break;
-  }
-  assert(words.size() == doc_counts.size());
-  //TODO: add support for word ngrams
-
-  int32_t nwords = words.size();
-  std::unordered_map<int32_t, std::pair<int32_t, int32_t>> counts;
-  for(auto i = 0; i < words.size(); ++i){
-    counts[words[i]].first++;
-    counts[words[i]].second = doc_counts[i];
-  }
-
-  real values_sum = 0;
-  words.clear();
-  for(auto it : counts){
-    words.push_back(it.first);
-    real tfidf = (static_cast<real>(it.second.first) / nwords) * std::log(static_cast<real>(ndocs_) / it.second.second);
-    words_values.push_back(tfidf);
-    values_sum += tfidf;
-  }
-
-  assert(words.size() == words_values.size());
-
-  for(auto &it : words_values)
-    it /= values_sum / words.size();
-
-  // Add bias word
-  auto eosId = getId(EOS, utils::hash(EOS));
-  if(words.back() != eosId) {
-    words.push_back(eosId);
-    words_values.push_back(1.0);
-  }
-
-  /*
-  for(auto i = 0; i < words.size(); ++i)
-    std::cout << words[i] << ":" << words_values[i] << " ";
-  std::cout << "\n";
-   */
-
-  return ntokens;
+  return weight;
 }
 
 void Dictionary::pushHash(std::vector<int32_t>& hashes, int32_t id) const {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 by Marek Wydmuch, Robert Istvan Busa-Fekete
+ * Copyright (c) 2018 by Marek Wydmuch, Róbert Busa-Fekete, Krzysztof Dembczyński
  * All rights reserved.
  */
 
@@ -8,21 +8,9 @@
 #include <iostream>
 #include <ostream>
 #include <vector>
-#include <utility>
-#include <memory>
-#include <queue>
-#include <cstdlib>
-#include <random>
-#include <string>
-#include <assert.h>
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
 #include <unordered_map>
-#include <unordered_set>
-#include <algorithm>
-#include <chrono>
-#include <random>
+#include <queue>
+#include <string>
 
 #include "vector.h"
 #include "real.h"
@@ -71,8 +59,6 @@ struct NodePartition{
 
 class PLT: public LossLayer{
  private:
-
-
   uint32_t k; // number of labels
   uint32_t t; // number of tree nodes
 

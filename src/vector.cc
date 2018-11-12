@@ -76,7 +76,7 @@ void Vector::addRowL2(const Matrix& A, int64_t i, real lr, real a, real l2) {
   assert(i < A.size(0));
   assert(size() == A.size(1));
   for (int64_t j = 0; j < A.size(1); j++) {
-    data_[j] += lr* ( a * A.at(i, j) - l2 * data_[j]);
+    data_[j] += lr * (a * A.at(i, j) - l2 * data_[j]);
   }
 }
 
@@ -84,9 +84,9 @@ void Vector::addRowL2Fobos(const Matrix& A, int64_t i, real lr, real a, real l2)
     assert(i >= 0);
     assert(i < A.size(0));
     assert(size() == A.size(1));
-    double mul = 1.0 / (1.0+l2*lr);
+    double mul = 1.0 / (1.0 + l2 * lr);
     for (int64_t j = 0; j < A.size(1); j++) {
-        data_[j] += lr* ( a * A.at(i, j));
+        data_[j] += lr * (a * A.at(i, j));
         data_[j] *= mul;
     }
 }

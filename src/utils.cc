@@ -55,6 +55,19 @@ namespace utils {
     }
     return h;
   }
+
+  void loadString(std::istream& in, std::string& str){
+      size_t str_size;
+      in.read((char*) &(str_size), sizeof(str_size));
+      str.resize(str_size);
+      in.read(&(str[0]), str_size * sizeof(char));
+  }
+
+  void saveString(std::ostream& out, std::string& str){
+      size_t str_size = str.length();
+      out.write((char*) &(str_size), sizeof(str_size));
+      out.write(&(str[0]), str_size * sizeof(char));
+  }
 }
 
 }

@@ -51,8 +51,11 @@ Args::Args() {
 
   // Features args
   wordsWeights = false;
-  tfidf = false;
+  tfidfWeights = false;
   labelsOrder = false;
+  addEosToken = true;
+  weight = "__weight__";
+  tag = "__tag__";
 
   // Quantization args
   qout = false;
@@ -63,7 +66,6 @@ Args::Args() {
 
   // PLT args
   arity = 2;
-  bias = 0;
   treeType = tree_type_name::complete;
   treeStructure = "";
   randomTree = false;
@@ -213,14 +215,14 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-wordsWeights") {
         wordsWeights = true;
         ai--;
-      } else if (args[ai] == "-tfidf") {
-        tfidf = true;
+      } else if (args[ai] == "-tfidfWeights") {
+        tfidfWeights = true;
         ai--;
       } else if (args[ai] == "-unitNorm") {
         unitNorm = true;
         ai--;
-      } else if (args[ai] == "-bias") {
-        bias = 1;
+      } else if (args[ai] == "-addEosToken") {
+        addEosToken = true;
         ai--;
       } else if (args[ai] == "-labelsOrder") {
         labelsOrder = true;
@@ -228,6 +230,10 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-probNorm") {
         probNorm = true;
         ai--;
+      } else if (args[ai] == "-weight") {
+        weight = std::string(args.at(ai + 1));
+      } else if (args[ai] == "-tag") {
+        tag = std::string(args.at(ai + 1));
 
       // Quantization args
       } else if (args[ai] == "-qnorm") {
@@ -359,7 +365,7 @@ void Args::printQuantizationHelp() {
 void Args::printInfo(){
   std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n  Features: ";
   if(model == model_name::sup){
-      if(tfidf) std::cerr << "tf-idf\n";
+      if(tfidfWeights) std::cerr << "tf-idf weights\n";
       else if(wordsWeights) std::cerr << "word weights\n";
       else std::cerr << "bow\n";
   }
@@ -385,8 +391,12 @@ void Args::save(std::ostream& out) {
   out.write((char*) &(lrUpdateRate), sizeof(int));
   out.write((char*) &(t), sizeof(double));
   out.write((char*) &(wordsWeights), sizeof(bool));
-  out.write((char*) &(tfidf), sizeof(bool));
-  out.write((char*) &(saveDocuments), sizeof(bool));
+  out.write((char*) &(tfidfWeights), sizeof(bool));
+  out.write((char*) &(addEosToken), sizeof(bool));
+
+  utils::saveString(out, label);
+  utils::saveString(out, weight);
+  utils::saveString(out, tag);
 
   // PLT args
   out.write((char*) &(arity), sizeof(int));
@@ -415,8 +425,12 @@ void Args::load(std::istream& in) {
   in.read((char*) &(lrUpdateRate), sizeof(int));
   in.read((char*) &(t), sizeof(double));
   in.read((char*) &(wordsWeights), sizeof(bool));
-  in.read((char*) &(tfidf), sizeof(bool));
-  in.read((char*) &(saveDocuments), sizeof(bool));
+  in.read((char*) &(tfidfWeights), sizeof(bool));
+  in.read((char*) &(addEosToken), sizeof(bool));
+
+  utils::loadString(in, label);
+  utils::loadString(in, weight);
+  utils::loadString(in, tag);
 
   // PLT args
   in.read((char*) &(arity), sizeof(int));

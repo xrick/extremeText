@@ -24,7 +24,7 @@
 namespace fasttext {
 
 typedef int32_t id_type;
-enum class entry_type : int8_t {word=0, label=1};
+enum class entry_type : int8_t {word=0, label=1, weight=2, tag=3};
 
 struct entry {
   std::string word;
@@ -101,7 +101,7 @@ class Dictionary {
         const std::string&,
         std::vector<int32_t>&,
         std::vector<std::string>&) const;
-    void add(const std::string&);
+    int32_t add(const std::string&);
     void add(const std::string&, std::unordered_set<int32_t>&);
     bool readWord(std::istream&, std::string&, real&) const;
     void readFromFile(std::istream&);
@@ -109,27 +109,13 @@ class Dictionary {
     void save(std::ostream&) const;
     void load(std::istream&);
     std::vector<int64_t> getCounts(entry_type) const;
-    int32_t getLine(std::istream&,
-                    std::vector<int32_t>&,
-                    std::vector<real>&,
-                    std::vector<int32_t>&) const;
-    int32_t getLine(std::istream&,
+    real getLine(std::istream&,
                     std::vector<int32_t>&,
                     std::vector<real>&,
                     std::vector<int32_t>&,
                     std::vector<std::string>&) const;
-    int32_t getLineTfIdf(std::istream&,
-                         std::vector<int32_t>&,
-                         std::vector<real>&,
-                         std::vector<int32_t>&) const;
-    int32_t getLineTfIdf(std::istream&,
-                         std::vector<int32_t>&,
-                         std::vector<real>&,
-                         std::vector<int32_t>&,
-                         std::vector<std::string>&) const;
     int32_t getLine(std::istream&,
                     std::vector<int32_t>&,
-                    //std::vector<real>&,
                     std::minstd_rand&) const;
     void threshold(int64_t, int64_t);
     void prune(std::vector<int32_t>&);

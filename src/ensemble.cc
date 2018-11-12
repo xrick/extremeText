@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 by Marek Wydmuch, Robert Istvan Busa-Fekete
+ * Copyright (c) 2018 by Marek Wydmuch, Róbert Busa-Fekete
  * All rights reserved.
  */
 
