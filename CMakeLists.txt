@@ -22,7 +22,7 @@ set(HEADER_FILES
     src/args.h
     src/ensemble.h
     src/dictionary.h
-    src/extremetext.h
+    src/fasttext.h
     src/kmeans.h
     src/losslayer.h
     src/matrix.h
@@ -40,7 +40,7 @@ set(SOURCE_FILES
     src/args.cc
     src/ensemble.cc
     src/dictionary.cc
-    src/extremetext.cc
+    src/fasttext.cc
     src/kmeans.cc
     src/losslayer.cc
     src/main.cc

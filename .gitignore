@@ -5,6 +5,8 @@
 data
 fasttext
 extremetext
+CMakeCache.txt
+CMakeFiles/
 result
 .idea
 .DS_Store
