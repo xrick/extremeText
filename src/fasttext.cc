@@ -510,6 +510,7 @@ void FastText::predictThread(
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
     modelPredictions.clear();
+    if (words.empty()) continue;
 
     model_->computeHidden(words, words_values, hidden);
     model_->predict(k, threshold, modelPredictions, hidden, output);
