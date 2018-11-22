@@ -1,5 +1,6 @@
 /**
  * Copyright (c) 2016-present, Facebook, Inc.
+ * Copyright (c) 2018 by Marek Wydmuch, Róbert Busa-Fekete
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
@@ -23,8 +24,8 @@
 
 namespace fasttext {
 
-constexpr int32_t FASTTEXT_VERSION = 14101; /* extremeText Version E1.0.1 */
-constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 14101;
+constexpr int32_t FASTTEXT_VERSION = 14102; /* extremeText Version E1.0.2 */
+constexpr int32_t FASTTEXT_FILEFORMAT_MAGIC_INT32 = 14102;
 
 FastText::FastText() : quant_(false) {}
 
@@ -774,6 +775,7 @@ void FastText::analogies(int32_t k) {
 void FastText::trainThread(int32_t threadId) {
   std::ifstream ifs(args_->input);
   utils::seek(ifs, threadId * utils::size(ifs) / args_->thread);
+  //std::this_thread::sleep_for(std::chrono::milliseconds(threadId * 100));
 
   Model model(input_, output_, args_, lossLayer_, threadId);
   if(lossLayer_ == nullptr){

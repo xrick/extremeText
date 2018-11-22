@@ -1,13 +1,14 @@
-fastText
+extremeText
 ========
 
-`fastText <https://fasttext.cc/>`__ is a library for efficient learning
-of word representations and sentence classification.
+`extremeText <https://github.com/mwydmuch/extremeText>`__ is an extension
+of `fastText <https://github.com/facebookresearch/fastText>`__ library
+for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
 Requirements
 ------------
 
-`fastText <https://fasttext.cc/>`__ builds on modern Mac OS and Linux
+`extremeText <https://github.com/mwydmuch/extremeText>`__ builds on modern Mac OS and Linux
 distributions. Since it uses C++11 features, it requires a compiler with
 good C++11 support. These include :
 
@@ -23,33 +24,45 @@ You will need
 Building fastText
 -----------------
 
-The easiest way to get the latest version of `fastText is to use
-pip <https://pypi.python.org/pypi/fasttext>`__.
+The easiest way to get extremeText is to use
+pip <https://pypi.python.org/pypi/fasttext>`__:
 
 ::
 
-    $ pip install fasttext
+    $ pip install extremetext
 
-If you want to use the latest unstable release you will need to build
-from source using setup.py.
-
-Now you can import this library with
+The latest version of extremeText can be build from sources:
 
 ::
 
-    import fastText
+    $ git clone https://github.com/mwydmuch/extremeText.git
+    $ cd extremeText
+    $ pip install .
+
+Alternatively you can also install extremeText using setuptools:
+
+::
+
+    $ git clone https://github.com/mwydmuch/extremeText.git
+    $ cd extremeText
+    $ python setup.py install
+
+Now you can import this library with:
+
+::
+
+    import extremeText
 
 Examples
 --------
 
-In general it is assumed that the reader already has good knowledge of
-fastText. For this consider the main
-`README <https://github.com/facebookresearch/fastText/blob/master/README.md>`__
-and in particular `the tutorials on our
-website <https://fasttext.cc/docs/en/supervised-tutorial.html>`__.
+In general it is assumed that the reader already has good knowledge of fastText/extremeText.
+ For this consider the main
+`README <https://github.com/mwydmuch/extremeText/blob/master/README.md>`__
+and `the tutorials on fastText website <https://fasttext.cc/docs/en/supervised-tutorial.html>`__.
 
 We recommend you look at the `examples within the doc
-folder <https://github.com/facebookresearch/fastText/tree/master/python/doc/examples>`__.
+folder <https://github.com/mwydmuch/extremeText/tree/master/python/doc/examples>`__.
 
 As with any package you can get help on any Python function using the
 help function.
@@ -58,13 +71,13 @@ For example
 
 ::
 
-    +>>> import fastText
-    +>>> help(fastText.FastText)
+    +>>> import extremeText
+    +>>> help(extremeText.ExtremeText)
 
-    Help on module fastText.FastText in fastText:
+    Help on module extremeText.ExtremeText in extremeText:
 
     NAME
-        fastText.FastText
+        extremeText.ExtremeText
 
     DESCRIPTION
         # Copyright (c) 2017-present, Facebook, Inc.
@@ -89,7 +102,7 @@ In general it is important to properly preprocess your data. In
 particular our example scripts in the `root
 folder <https://github.com/facebookresearch/fastText>`__ do this.
 
-fastText assumes UTF-8 encoded text. All text must be `unicode for
+extremeText like fastText assumes UTF-8 encoded text. All text must be `unicode for
 Python2 <https://docs.python.org/2/library/functions.html#unicode>`__
 and `str for
 Python3 <https://docs.python.org/3.5/library/stdtypes.html#textseq>`__.
@@ -115,7 +128,7 @@ The newline character is used to delimit lines of text. In particular,
 the EOS token is appended to a line of text if a newline character is
 encountered. The only exception is if the number of tokens exceeds the
 MAX\_LINE\_SIZE constant as defined in the `Dictionary
-header <https://github.com/facebookresearch/fastText/blob/master/src/dictionary.h>`__.
+header <https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.h>`__.
 This means if you have text that is not separate by newlines, such as
 the `fil9 dataset <http://mattmahoney.net/dc/textdata>`__, it will be
 broken into chunks with MAX\_LINE\_SIZE of tokens and the EOS token is
@@ -125,9 +138,9 @@ The length of a token is the number of UTF-8 characters by considering
 the `leading two bits of a
 byte <https://en.wikipedia.org/wiki/UTF-8#Description>`__ to identify
 `subsequent bytes of a multi-byte
-sequence <https://github.com/facebookresearch/fastText/blob/master/src/dictionary.cc>`__.
+sequence <https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.cc>`__.
 Knowing this is especially important when choosing the minimum and
 maximum length of subwords. Further, the EOS token (as specified in the
 `Dictionary
-header <https://github.com/facebookresearch/fastText/blob/master/src/dictionary.h>`__)
+header <https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.h>`__)
 is considered a character and will not be broken into subwords.

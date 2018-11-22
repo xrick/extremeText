@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2017-present, Facebook, Inc.
+# Copyright (c) 2018 by Marek Wydmuch
 # All rights reserved.
 #
 # This source code is licensed under the BSD-style license found in the
@@ -18,8 +19,8 @@ import sys
 import setuptools
 import os
 
-__version__ = '0.8.22'
-FASTTEXT_SRC = "src"
+__version__ = '0.8.3'
+EXTREMETEXT_SRC = "src"
 
 # Based on https://github.com/pybind/python_example
 
@@ -38,28 +39,28 @@ class get_pybind_include(object):
         return pybind11.get_include(self.user)
 
 
-fasttext_src_files = map(str, os.listdir(FASTTEXT_SRC))
-fasttext_src_cc = list(filter(lambda x: x.endswith('.cc'), fasttext_src_files))
+extremetext_src_files = map(str, os.listdir(EXTREMETEXT_SRC))
+extremetext_src_cc = list(filter(lambda x: x.endswith('.cc'), extremetext_src_files))
 
-fasttext_src_cc = list(
-    map(lambda x: str(os.path.join(FASTTEXT_SRC, x)), fasttext_src_cc)
+extremetext_src_cc = list(
+    map(lambda x: str(os.path.join(EXTREMETEXT_SRC, x)), extremetext_src_cc)
 )
 
 ext_modules = [
     Extension(
-        str('fasttext_pybind'),
+        str('extremetext_pybind'),
         [
-            str('python/fastText/pybind/fasttext_pybind.cc'),
-        ] + fasttext_src_cc,
+            str('python/extremeText/pybind/extremetext_pybind.cc'),
+        ] + extremetext_src_cc,
         include_dirs=[
             # Path to pybind11 headers
             get_pybind_include(),
             get_pybind_include(user=True),
-            # Path to fasttext source code
-            FASTTEXT_SRC,
+            # Path to extremetext source code
+            EXTREMETEXT_SRC,
         ],
         language='c++',
-        extra_compile_args=["-O3 -funroll-loops -pthread -march=native"],
+        extra_compile_args=["-O3 -funroll-loops -pthread -march=native -v"],
     ),
 ]
 
@@ -103,7 +104,7 @@ class BuildExt(build_ext):
 
     def build_extensions(self):
         if sys.platform == 'darwin':
-            all_flags = ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+            all_flags = ['-stdlib=libc++', '-mmacosx-version-min=10.9']
             if has_flag(self.compiler, [all_flags[0]]):
                 self.c_opts['unix'] += [all_flags[0]]
             elif has_flag(self.compiler, all_flags):
@@ -139,14 +140,14 @@ def _get_readme():
 
 
 setup(
-    name='fasttext',
+    name='extremetext',
     version=__version__,
-    author='Christian Puhrsch',
-    author_email='cpuhrsch@fb.com',
-    description='fastText Python bindings',
+    author='Marek Wydmuch',
+    author_email='mwydmuch@cs.put.poznan.pl',
+    description='extremeText Python bindings',
     long_description=_get_readme(),
     ext_modules=ext_modules,
-    url='https://github.com/facebookresearch/fastText',
+    url='https://github.com/mwydmuch/extremeText',
     license='BSD',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -157,6 +158,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Software Development',
         'Topic :: Scientific/Engineering',
         'Operating System :: Microsoft :: Windows',
@@ -167,9 +169,9 @@ setup(
     install_requires=['pybind11>=2.2', "setuptools >= 0.7.0", "numpy"],
     cmdclass={'build_ext': BuildExt},
     packages=[
-        str('fastText'),
-        str('fastText.util'),
-        str('fastText.tests'),
+        str('extremeText'),
+        str('extremeText.util'),
+        str('extremeText.tests'),
     ],
     package_dir={str(''): str('python')},
     zip_safe=False,

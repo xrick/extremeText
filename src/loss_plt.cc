@@ -271,35 +271,7 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     ++n_vis_count;
     ++n->n_updates;
     if (label) ++n->n_positive_updates;
-    //return binaryLogistic(n->index, label, lr, l2, model_);
-
-    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, target));
-    real score = model_->wo_->dotRow(model_->hidden_, shift + n->index);
-    if(score > MAX_SIGMOID) score = MAX_SIGMOID;
-    else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
-    score = model_->sigmoid(score);
-    real diff = (label - score);
-
-    // Original update
-    /*
-    real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + target, (lr * diff) / args_->ensemble)
-    model_->wo_->addRow(model_->hidden_, shift + target, alpha);
-     */
-
-    if(args_->fobos){
-        model_->grad_.addRowL2Fobos(*model_->wo_, shift + n->index, lr, diff / args_->ensemble, l2);
-        model_->wo_->addRowL2Fobos(model_->hidden_, shift + n->index, lr, diff, l2);
-    } else {
-        model_->grad_.addRowL2(*model_->wo_, shift + n->index, lr, diff / args_->ensemble, l2);
-        model_->wo_->addRowL2(model_->hidden_, shift + n->index, lr, diff, l2);
-    }
-
-    if (label) {
-        return -log(score);
-    } else {
-        return -log(1.0 - score);
-    }
+    return binaryLogistic(n->index, label, lr, l2, model_);
 }
 
 real PLT::predictNode(NodePLT *n, Vector& hidden, const Model *model_){

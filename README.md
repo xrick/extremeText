@@ -1,13 +1,14 @@
 # extremeText
 
-extremeText is an extension of fastText library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
+extremeText is an extension of [fastText](https://github.com/facebookresearch/fastText) library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
 extremeText adds new options for fastText supervised command:
 
 ```
 $ ./extremetext supervised
 
-New loss for multi-label classification:
+New losses for multi-label classification:
+  -loss sigmoid       
   -loss plt           (Probabilistic Labels Tree)
 
 With the following optional arguments:
@@ -17,20 +18,65 @@ With the following optional arguments:
   -l2                 l2 regularization (default = 0)
   -tfidfWeights       calculates TF-IDF weights for words
   -wordsWeights       reads words weights from file (format: <word>:<weights>)
-  -weight             document weight prefix (default = __weight__)
-  -tag                tags prefix (default = __tag__)
+  -weight             document weight prefix (default = __weight__; format: <weight prefix>:<document weight>)
+  -tag                tags prefix (default = __tag__), tags are words tha are ingnored, by are outputed with prediction
 ```
 
-extremeText adds new commands and makes other work in parallel:
+extremeText adds new commands and makes other to work in parallel:
 ```
 $ ./extremetext predict[-prob] <model> <test-data> [<k>] [<th>] [<output>] [<thread>]
 $ ./extremetext get-prob <model> <input> [<th>] [<output>] [<thread>]
+```
 
+## Installation
+
+### Building executable
+
+extremeText like fastText can be build as executable using Make or/and CMake:
+
+```
+$ git clone https://github.com/mwydmuch/extremeText.git
+$ cd extremeText
+$ (optional) cmake .
+$ make
+```
+
+This will produce object files for all the classes as well as the main binary `extremetext`.
+
+### Python package
+
+The easiest way to get extremeText is to use [pip](https://pip.pypa.io/en/stable/):
+
+```
+pip install extremetext
+```
+
+The latest version of extremeText can be build from sources:
+
+```
+$ git clone https://github.com/mwydmuch/extremeText.git
+$ cd extremeText
+$ pip install .
+```
+
+Alternatively you can also install extremeText using setuptools:
+
+```
+$ git clone https://github.com/mwydmuch/extremeText.git
+$ cd extremeText
+$ python setup.py install
 ```
 
 ## Reference
 
-M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński. [A no-regret generalization of hierarchical softmax to extreme multi-label classification](https://arxiv.org/abs/1810.11671)
+Please cite below work if using this code for classification.
+
+M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński, [*A no-regret generalization of hierarchical softmax to extreme multi-label classification*](https://arxiv.org/abs/1810.11671)
+
+## TODO
+* Merge with latest changes from fastText.
+* Rewrite vanilla fastText losses as extremeText loss layers to support new features. 
+
 
 ---
 

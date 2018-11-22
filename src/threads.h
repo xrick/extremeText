@@ -1,9 +1,8 @@
 /**
  * Copyright (c) 2012 by Jakob Progsch, Vaclav Zeman
+ * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
  * https://github.com/progschj/ThreadPool
- *
- * Modified by Marek Wydmuch
  */
 
 #pragma once

@@ -52,18 +52,13 @@ void LossLayer::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
 
 real LossLayer::binaryLogistic(int32_t target, real label, real lr, real l2, Model *model_){
 
-    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, target));
-    real score = model_->wo_->dotRow(model_->hidden_, shift + target);
-    if(score > MAX_SIGMOID) score = MAX_SIGMOID;
-    else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
-    score = model_->sigmoid(score);
+    real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, shift + target));
     real diff = (label - score);
 
     // Original update
     /*
-    real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + target, (lr * diff) / args_->ensemble)
-    model_->wo_->addRow(model_->hidden_, shift + target, alpha);
+    model_->grad_.addRow(*model_->wo_, shift + target, lr * diff / args_->ensemble)
+    model_->wo_->addRow(model_->hidden_, shift + target, lr * diff);
      */
 
     if(args_->fobos){
@@ -75,9 +70,9 @@ real LossLayer::binaryLogistic(int32_t target, real label, real lr, real l2, Mod
     }
 
     if (label) {
-        return -log(score);
+        return -model_->log(score);
     } else {
-        return -log(1.0 - score);
+        return -model_->log(1.0 - score);
     }
 }
 

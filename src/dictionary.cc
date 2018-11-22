@@ -1,5 +1,6 @@
 /**
  * Copyright (c) 2016-present, Facebook, Inc.
+ * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
@@ -495,17 +496,7 @@ real Dictionary::getLine(std::istream& in,
     words_values.pop_back();
   }
 
-//    std::cerr << "  weight: " << weight << " labels: ";
-//    utils::printVector(labels, std::cerr);
-//    std::cerr << "  words: ";
-//    utils::printVector(words, std::cerr);
-//    std::cerr << "  words_weights: ";
-//    utils::printVector(words_values, std::cerr);
-//    std::cerr << "  tag: ";
-//    utils::printVector(tags, std::cerr);
-//    std::cerr << "  last token EOS: " << (words.back() == eosId) << std::endl;
-
-    return weight;
+  return weight;
 }
 
 void Dictionary::pushHash(std::vector<int32_t>& hashes, int32_t id) const {
