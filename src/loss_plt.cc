@@ -16,7 +16,7 @@
 #include <climits>
 #include <iomanip>
 
-#include "plt.h"
+#include "loss_plt.h"
 #include "model.h"
 #include "threads.h"
 #include "utils.h"
@@ -267,7 +267,13 @@ void PLT::loadTreeStructure(std::string filename){
 
 real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
 
-    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, n->index));
+    if(n->label < 0) ++n_in_vis_count;
+    ++n_vis_count;
+    ++n->n_updates;
+    if (label) ++n->n_positive_updates;
+    //return binaryLogistic(n->index, label, lr, l2, model_);
+
+    //real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, target));
     real score = model_->wo_->dotRow(model_->hidden_, shift + n->index);
     if(score > MAX_SIGMOID) score = MAX_SIGMOID;
     else if(score < -MAX_SIGMOID) score = -MAX_SIGMOID;
@@ -277,8 +283,8 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     // Original update
     /*
     real alpha = lr * (label - score);
-    model_->grad_.addRow(*model_->wo_, shift + n->index, (lr * diff) / args_->ensemble)
-    model_->wo_->addRow(model_->hidden_, shift + n->index, alpha);
+    model_->grad_.addRow(*model_->wo_, shift + target, (lr * diff) / args_->ensemble)
+    model_->wo_->addRow(model_->hidden_, shift + target, alpha);
      */
 
     if(args_->fobos){
@@ -289,12 +295,7 @@ real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
         model_->wo_->addRowL2(model_->hidden_, shift + n->index, lr, diff, l2);
     }
 
-    if(n->label < 0) ++n_in_vis_count;
-    ++n_vis_count;
-    ++n->n_updates;
-
     if (label) {
-        ++n->n_positive_updates;
         return -log(score);
     } else {
         return -log(1.0 - score);
@@ -365,8 +366,8 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
         std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
         n_queue.push({tree_root, predictNode(tree_root, model_->hidden_, model_)});
         while(n_sampled < args_->neg) {
-        //while(n_labels < labels.size()) { // alternative negative sampling
-        //for(int i = 0; i < args_->neg; ++i) { // alternative negative sampling
+            //while(n_labels < labels.size()) { // alternative negative sampling
+            //for(int i = 0; i < args_->neg; ++i) { // alternative negative sampling
             NodePLT *n = getNextBest(n_queue, model_->hidden_, model_).node;
             if(!n_positive.count(n)){
                 ++n_sampled;
@@ -380,7 +381,7 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     }
 
     real loss = 0.0;
-    double l2 = args_->l2;
+    real l2 = args_->l2;
 
     real label = 1.0;
     for (auto &n : n_positive){
@@ -526,9 +527,10 @@ void PLT::printInfo(){
 
 void PLT::save(std::ostream& out){
     if(args_->verbose > 2)
-        std::cerr << "Saving PLT model ...\n";
-    out.write((char*) &shift, sizeof(shift));
+        std::cerr << "Saving PLT output ...\n";
+
     out.write((char*) &k, sizeof(int32_t));
+    out.write((char*) &shift, sizeof(shift));
 
     t = tree.size();
     out.write((char*) &t, sizeof(t));
@@ -556,10 +558,10 @@ void PLT::save(std::ostream& out){
 
 void PLT::load(std::istream& in){
     if(args_->verbose > 2)
-        std::cerr << "Loading PLT model ...\n";
+        std::cerr << "Loading PLT output ...\n";
 
-    in.read((char*) &shift, sizeof(shift));
     in.read((char*) &k, sizeof(int32_t));
+    in.read((char*) &shift, sizeof(shift));
 
     in.read((char*) &t, sizeof(t));
     tree.resize(t);

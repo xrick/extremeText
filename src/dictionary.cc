@@ -195,7 +195,7 @@ void Dictionary::computeSubwords(const std::string& word,
 }
 
 void Dictionary::initNgrams() {
-  for (size_t i = 0; i < size_; i++) {
+  for (int32_t i = 0; i < size_; i++) {
     std::string word = BOW + words_[i].word + EOW;
     words_[i].subwords.clear();
     words_[i].subwords.push_back(i);
@@ -203,6 +203,12 @@ void Dictionary::initNgrams() {
       computeSubwords(word, words_[i].subwords);
     }
   }
+}
+
+bool Dictionary::readWord(std::istream& in, std::string& word) const
+{
+  real value;
+  return readWord(in, word, value);
 }
 
 bool Dictionary::readWord(std::istream& in, std::string& word, real& value) const
@@ -303,7 +309,7 @@ void Dictionary::threshold(int64_t t, int64_t tl) {
 
 void Dictionary::initTableDiscard() {
   pdiscard_.resize(size_);
-  for (size_t i = 0; i < size_; i++) {
+  for (int32_t i = 0; i < size_; i++) {
     real f = real(words_[i].count) / real(ntokens_);
     pdiscard_[i] = std::sqrt(args_->t / f) + args_->t / f;
   }
@@ -320,9 +326,9 @@ std::vector<int64_t> Dictionary::getCounts(entry_type type) const {
 void Dictionary::addWordNgrams(std::vector<int32_t>& line,
                                const std::vector<int32_t>& hashes,
                                int32_t n) const {
-  for (int32_t i = 0; i < hashes.size(); i++) {
+  for (size_t i = 0; i < hashes.size(); i++) {
     uint64_t h = hashes[i];
-    for (int32_t j = i + 1; j < hashes.size() && j < i + n; j++) {
+    for (size_t j = i + 1; j < hashes.size() && j < i + n; j++) {
       h = h * 116049371 + hashes[j];
       pushHash(line, h % args_->bucket);
     }
@@ -458,7 +464,7 @@ real Dictionary::getLine(std::istream& in,
     assert(words.size() == doc_counts.size());
     int32_t nwords = words.size();
     std::unordered_map<int32_t, std::pair<int32_t, int32_t>> counts;
-    for(auto i = 0; i < words.size(); ++i){
+    for(size_t i = 0; i < words.size(); ++i){
       counts[words[i]].first++;
       counts[words[i]].second = doc_counts[i];
     }
@@ -489,7 +495,17 @@ real Dictionary::getLine(std::istream& in,
     words_values.pop_back();
   }
 
-  return weight;
+//    std::cerr << "  weight: " << weight << " labels: ";
+//    utils::printVector(labels, std::cerr);
+//    std::cerr << "  words: ";
+//    utils::printVector(words, std::cerr);
+//    std::cerr << "  words_weights: ";
+//    utils::printVector(words_values, std::cerr);
+//    std::cerr << "  tag: ";
+//    utils::printVector(tags, std::cerr);
+//    std::cerr << "  last token EOS: " << (words.back() == eosId) << std::endl;
+
+    return weight;
 }
 
 void Dictionary::pushHash(std::vector<int32_t>& hashes, int32_t id) const {
@@ -597,7 +613,7 @@ void Dictionary::prune(std::vector<int32_t>& idx) {
   std::fill(word2int_.begin(), word2int_.end(), -1);
 
   int32_t j = 0;
-  for (int32_t i = 0; i < words_.size(); i++) {
+  for (size_t i = 0; i < words_.size(); i++) {
     if (getType(i) == entry_type::label || (j < words.size() && words[j] == i)) {
       words_[j] = words_[i];
       word2int_[find(words_[j].word)] = j;

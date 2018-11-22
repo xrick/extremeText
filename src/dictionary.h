@@ -24,7 +24,7 @@
 namespace fasttext {
 
 typedef int32_t id_type;
-enum class entry_type : int8_t {word=0, label=1, weight=2, tag=3};
+enum class entry_type : int8_t {word=0, label=1};
 
 struct entry {
   std::string word;
@@ -103,6 +103,7 @@ class Dictionary {
         std::vector<std::string>&) const;
     int32_t add(const std::string&);
     void add(const std::string&, std::unordered_set<int32_t>&);
+    bool readWord(std::istream&, std::string&) const;
     bool readWord(std::istream&, std::string&, real&) const;
     void readFromFile(std::istream&);
     std::string getLabel(int32_t) const;

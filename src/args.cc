@@ -73,7 +73,7 @@ Args::Args() {
   maxLeaves = 100;
 
   // KMeans
-  kMeansEps = 0.0001;
+  kMeansEps = 0.001;
   kMeansBalanced = true;
 
   // Update args
@@ -97,6 +97,8 @@ std::string Args::lossToString(loss_name ln) const {
       return "softmax";
     case loss_name::plt:
       return "plt";
+    case loss_name::sigmoid:
+      return "sigmoid";
   }
   return "Unknown loss!"; // should never happen
 }

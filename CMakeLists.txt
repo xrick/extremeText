@@ -20,14 +20,15 @@ set(CMAKE_CXX_FLAGS " -pthread -std=c++11 -funroll-loops -O3 -march=native")
 
 set(HEADER_FILES
     src/args.h
-    src/ensemble.h
     src/dictionary.h
     src/fasttext.h
     src/kmeans.h
+    src/loss_ensemble.h
+    src/loss_plt.h
+    src/loss_sigmoid.h
     src/losslayer.h
     src/matrix.h
     src/model.h
-    src/plt.h
     src/productquantizer.h
     src/qmatrix.h
     src/real.h
@@ -38,15 +39,16 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
     src/args.cc
-    src/ensemble.cc
     src/dictionary.cc
     src/fasttext.cc
     src/kmeans.cc
+    src/loss_ensemble.cc
+    src/loss_plt.cc
+    src/loss_sigmoid.cc
     src/losslayer.cc
     src/main.cc
     src/matrix.cc
     src/model.cc
-    src/plt.cc
     src/productquantizer.cc
     src/qmatrix.cc
     src/utils.cc

@@ -59,7 +59,6 @@ struct NodePartition{
 
 class PLT: public LossLayer{
  private:
-  uint32_t k; // number of labels
   uint32_t t; // number of tree nodes
 
   uint64_t n_in_vis_count;
@@ -70,13 +69,6 @@ class PLT: public LossLayer{
   NodePLT *tree_root;
   std::vector<NodePLT*> tree; // pointers to tree nodes
   std::unordered_map<int32_t, NodePLT*> tree_leaves; // leaves map
-
-  real base_lr;
-  real power_t;
-  uint32_t *labels_nodes_map;
-  uint32_t *nodes_labels_map;
-
-  Model *model_;
 
   real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
   real predictNode(NodePLT *n, Vector& hidden, const Model *model_);

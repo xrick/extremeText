@@ -3,7 +3,7 @@
  * All rights reserved.
  */
 
-#include "ensemble.h"
+#include "loss_ensemble.h"
 
 #include <random>
 #include <set>
@@ -35,6 +35,7 @@ void Ensemble::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
         baseLayers.push_back(base);
     }
 
+    k = baseLayers[0]->getSize();
     multilabel = baseLayers[0]->isMultilabel();
 }
 
@@ -94,13 +95,14 @@ int32_t Ensemble::getSize(){
 }
 
 void Ensemble::save(std::ostream& out){
-    std::cerr << "Saving Ensemble layer ...\n";
+    std::cerr << "Saving Ensemble output ...\n";
+
     for(auto base : baseLayers)
         base->save(out);
 }
 
 void Ensemble::load(std::istream& in){
-    std::cerr << "Loading Ensemble layer ...\n";
+    std::cerr << "Loading Ensemble output ...\n";
 
     for(auto i = 0; i < args_->ensemble; ++i){
         auto base = lossLayerFactory(args_, args_->loss);

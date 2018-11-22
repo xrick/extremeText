@@ -29,17 +29,19 @@ public:
     void setShift(int64_t);
     void setSeed(uint32_t);
 
-    virtual int32_t getSize() = 0;
-    virtual void setup(std::shared_ptr<Dictionary>, uint32_t seed) = 0;
+    virtual int32_t getSize();
+    virtual void setup(std::shared_ptr<Dictionary>, uint32_t);
 
-    virtual real loss(int32_t target, real lr, Model *model_);
+    real binaryLogistic(int32_t, real, real, real, Model*);
+
+    virtual real loss(const int32_t target, real lr, Model *model_);
     virtual real loss(const std::vector <int32_t> &labels, real lr, Model *model_);
     virtual real loss(const std::vector <int32_t> &input, const std::vector <int32_t> &labels, real lr, Model *model_);
     virtual void findKBest(int32_t top_k, real threshold, std::vector <std::pair<real, int32_t>> &heap, Vector &hidden, const Model *model_) = 0;
     virtual real getLabelP(int32_t label, Vector &hidden, const Model *model_);
 
-    virtual void save(std::ostream&) = 0;
-    virtual void load(std::istream&) = 0;
+    virtual void save(std::ostream&);
+    virtual void load(std::istream&);
 
     virtual void printInfo();
 
@@ -47,6 +49,7 @@ protected:
     std::default_random_engine rng;
     std::shared_ptr<Args> args_;
 
+    int32_t k; // number of classes/labels
     int64_t shift;
     bool multilabel;
 };

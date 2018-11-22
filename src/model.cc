@@ -306,6 +306,7 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
       loss_ += softmax(target, lr);
     }
   }
+
   nexamples_ += 1;
   if (args_->model == model_name::sup) {
     grad_.mul(1.0 / values_sum);

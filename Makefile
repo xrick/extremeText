@@ -9,7 +9,7 @@
 
 CXX = c++
 CXXFLAGS = -pthread -std=c++0x -march=native
-OBJS = args.o dictionary.o productquantizer.o matrix.o qmatrix.o vector.o model.o utils.o fasttext.o losslayer.o plt.o ensemble.o kmeans.o
+OBJS = args.o dictionary.o productquantizer.o matrix.o qmatrix.o vector.o model.o utils.o fasttext.o losslayer.o loss_plt.o loss_ensemble.o kmeans.o loss_sigmoid.o
 INCLUDES = -I.
 
 opt: CXXFLAGS += -O3 -funroll-loops
@@ -45,14 +45,17 @@ utils.o: src/utils.cc src/utils.h
 losslayer.o: src/losslayer.cc src/losslayer.h
 	$(CXX) $(CXXFLAGS) -c src/losslayer.cc
 
-plt.o: src/plt.cc src/plt.h
-	$(CXX) $(CXXFLAGS) -c src/plt.cc
+loss_plt.o: src/loss_plt.cc src/loss_plt.h
+	$(CXX) $(CXXFLAGS) -c src/loss_plt.cc
 
-ensemble.o: src/ensemble.cc src/ensemble.h
-	$(CXX) $(CXXFLAGS) -c src/ensemble.cc
+loss_ensemble.o: src/loss_ensemble.cc src/loss_ensemble.h
+	$(CXX) $(CXXFLAGS) -c src/loss_ensemble.cc
 
 kmeans.o: src/kmeans.cc src/kmeans.h
 	$(CXX) $(CXXFLAGS) -c src/kmeans.cc
+
+loss_sigmoid.o: src/loss_sigmoid.cc src/loss_sigmoid.h
+	$(CXX) $(CXXFLAGS) -c src/loss_sigmoid.cc
 
 fasttext.o: src/fasttext.cc src/*.h
 	$(CXX) $(CXXFLAGS) -c src/fasttext.cc
