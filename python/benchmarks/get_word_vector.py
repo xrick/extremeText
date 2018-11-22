@@ -10,8 +10,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from fastText import load_model
-from fastText import tokenize
+from extremeText import load_model
+from extremeText import tokenize
 import sys
 import time
 import tempfile

@@ -11,10 +11,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from fastText import train_supervised
-from fastText import train_unsupervised
-from fastText import util
-import fastText
+from extremeText import train_supervised
+from extremeText import train_unsupervised
+from extremeText import util
+import extremeText
 import os
 import subprocess
 import unittest
@@ -27,7 +27,7 @@ try:
     import unicode
 except ImportError:
     pass
-from fastText.tests.test_configurations import get_supervised_models
+from extremeText.tests.test_configurations import get_supervised_models
 
 
 def eprint(cls, *args, **kwargs):
@@ -292,7 +292,7 @@ class TestFastTextUnitPy(unittest.TestCase):
         words, freqs = f.get_words(include_freq=True)
         foundEOS = False
         for word, freq in zip(words, freqs):
-            if word == fastText.EOS:
+            if word == extremeText.EOS:
                 foundEOS = True
             else:
                 self.assertEqual(words_python[word], freq)
@@ -318,16 +318,16 @@ class TestFastTextUnitPy(unittest.TestCase):
             f.get_subwords(w)
 
     def gen_test_tokenize(self, kwargs):
-        self.assertEqual(["asdf", "asdb"], fastText.tokenize("asdf asdb"))
-        self.assertEqual(["asdf"], fastText.tokenize("asdf"))
-        self.assertEqual([fastText.EOS], fastText.tokenize("\n"))
-        self.assertEqual(["asdf", fastText.EOS], fastText.tokenize("asdf\n"))
-        self.assertEqual([], fastText.tokenize(""))
-        self.assertEqual([], fastText.tokenize(" "))
+        self.assertEqual(["asdf", "asdb"], extremeText.tokenize("asdf asdb"))
+        self.assertEqual(["asdf"], extremeText.tokenize("asdf"))
+        self.assertEqual([extremeText.EOS], extremeText.tokenize("\n"))
+        self.assertEqual(["asdf", extremeText.EOS], extremeText.tokenize("asdf\n"))
+        self.assertEqual([], extremeText.tokenize(""))
+        self.assertEqual([], extremeText.tokenize(" "))
         # An empty string is not a token (it's just whitespace)
         # So the minimum length must be 1
         words = get_random_words(100, 1, 20)
-        self.assertEqual(words, fastText.tokenize(" ".join(words)))
+        self.assertEqual(words, extremeText.tokenize(" ".join(words)))
 
     def gen_test_unsupervised_dimension(self, kwargs):
         if "dim" in kwargs:

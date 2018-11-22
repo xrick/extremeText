@@ -14,6 +14,7 @@
 #include <pybind11/stl.h>
 #include <real.h>
 #include <vector.h>
+#include <utils.h>
 #include <iterator>
 #include <sstream>
 #include <cmath>
@@ -26,13 +27,16 @@ std::pair<std::vector<std::string>, std::vector<std::string>> getLineText(
   std::string token;
   std::vector<std::string> words;
   std::vector<std::string> labels;
-  while (d->readWord(ioss, token)) {
-    uint32_t h = d->hash(token);
+  std::vector<fasttext::real> words_values;
+  fasttext::real value;
+  while (d->readWord(ioss, token, value)) {
+    uint32_t h = fasttext::utils::hash(token);
     int32_t wid = d->getId(token, h);
     fasttext::entry_type type = wid < 0 ? d->getType(token) : d->getType(wid);
 
     if (type == fasttext::entry_type::word) {
       words.push_back(token);
+      words_values.push_back(value);
     // Labels must not be OOV!
     } else if (type == fasttext::entry_type::label && wid >= 0) {
       labels.push_back(token);
@@ -40,13 +44,12 @@ std::pair<std::vector<std::string>, std::vector<std::string>> getLineText(
     if (token == fasttext::Dictionary::EOS)
       break;
   }
-  return std::pair<std::vector<std::string>, std::vector<std::string>>(
-      words, labels);
+  return std::pair<std::vector<std::string>, std::vector<std::string>>(words, labels);
 }
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(fasttext_pybind, m) {
+PYBIND11_MODULE(extremetext_pybind, m) {
   py::class_<fasttext::Args>(m, "args")
       .def(py::init<>())
       .def_readwrite("input", &fasttext::Args::input)
@@ -76,7 +79,36 @@ PYBIND11_MODULE(fasttext_pybind, m) {
       .def_readwrite("retrain", &fasttext::Args::retrain)
       .def_readwrite("qnorm", &fasttext::Args::qnorm)
       .def_readwrite("cutoff", &fasttext::Args::cutoff)
-      .def_readwrite("dsub", &fasttext::Args::dsub);
+      .def_readwrite("dsub", &fasttext::Args::dsub)
+
+      //extremeText args
+      .def_readwrite("wordsWeights", &fasttext::Args::wordsWeights)
+      .def_readwrite("tfidfWeights", &fasttext::Args::tfidfWeights)
+
+      // PLT args
+      .def_readwrite("arity", &fasttext::Args::arity)
+      .def_readwrite("maxLeaves", &fasttext::Args::maxLeaves)
+      .def_readwrite("treeType", &fasttext::Args::treeType)
+      .def_readwrite("treeStructure", &fasttext::Args::treeStructure)
+
+      // KMeans
+      .def_readwrite("kMeansEps", &fasttext::Args::kMeansEps)
+      .def_readwrite("kMeansBalanced", &fasttext::Args::kMeansBalanced)
+
+      // Update args
+      .def_readwrite("l2", &fasttext::Args::l2)
+
+      // Ensemble args
+      .def_readwrite("bagging", &fasttext::Args::bagging)
+      .def_readwrite("ensemble", &fasttext::Args::ensemble);
+
+  // extremeText tree types
+  py::enum_<fasttext::tree_type_name>(m, "tree_type_name")
+      .value("huffman", fasttext::tree_type_name::huffman)
+      .value("complete", fasttext::tree_type_name::complete)
+      .value("kmeans", fasttext::tree_type_name::kmeans)
+      .value("custom", fasttext::tree_type_name::custom)
+      .export_values();
 
   py::enum_<fasttext::model_name>(m, "model_name")
       .value("cbow", fasttext::model_name::cbow)
@@ -88,6 +120,8 @@ PYBIND11_MODULE(fasttext_pybind, m) {
       .value("hs", fasttext::loss_name::hs)
       .value("ns", fasttext::loss_name::ns)
       .value("softmax", fasttext::loss_name::softmax)
+      .value("plt", fasttext::loss_name::plt)
+      .value("sigmoid", fasttext::loss_name::sigmoid)
       .export_values();
 
   m.def(
@@ -122,7 +156,7 @@ PYBIND11_MODULE(fasttext_pybind, m) {
              sizeof(fasttext::real) * (int64_t)1});
       });
 
-  py::class_<fasttext::FastText>(m, "fasttext")
+  py::class_<fasttext::FastText>(m, "extremetext")
       .def(py::init<>())
       .def("getArgs", &fasttext::FastText::getArgs)
       .def(
@@ -150,7 +184,7 @@ PYBIND11_MODULE(fasttext_pybind, m) {
             if (!ifs.is_open()) {
               throw std::invalid_argument("Test file cannot be opened!");
             }
-            std::tuple<int64_t, double, double> result = m.test(ifs, k);
+            std::tuple<int64_t, double, double, double> result = m.test(ifs, k);
             ifs.close();
             return result;
           })

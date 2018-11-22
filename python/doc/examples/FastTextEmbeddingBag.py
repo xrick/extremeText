@@ -21,7 +21,7 @@ import torch
 import random
 import string
 import time
-from fastText import load_model
+from extremeText import load_model
 from torch.autograd import Variable
 
 

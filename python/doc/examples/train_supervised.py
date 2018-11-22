@@ -14,31 +14,31 @@ from __future__ import unicode_literals
 from __future__ import division, absolute_import, print_function
 
 import os
-from fastText import train_supervised
+from extremeText import train_supervised
 
 
-def print_results(N, p, r):
+def print_results(N, p, r, c):
     print("N\t" + str(N))
     print("P@{}\t{:.3f}".format(1, p))
     print("R@{}\t{:.3f}".format(1, r))
 
 if __name__ == "__main__":
-    train_data = os.path.join(os.getenv("DATADIR", ''), 'cooking.train')
-    valid_data = os.path.join(os.getenv("DATADIR", ''), 'cooking.valid')
+    train_data = os.path.join(os.getenv("DATADIR", ''), 'dbpedia.train')
+    valid_data = os.path.join(os.getenv("DATADIR", ''), 'dbpedia.test')
 
     # train_supervised uses the same arguments and defaults as the fastText cli
-    model = train_supervised(
-        input=train_data, epoch=25, lr=1.0, wordNgrams=2, verbose=2, minCount=1
-    )
-    print_results(*model.test(valid_data))
+    # model = train_supervised(
+    #     input=train_data, epoch=25, lr=1.0, wordNgrams=2, verbose=3, minCount=1
+    # )
+    # print_results(*model.test(valid_data))
 
     model = train_supervised(
-        input=train_data, epoch=25, lr=1.0, wordNgrams=2, verbose=2, minCount=1,
-        loss="hs"
+        input=train_data, epoch=25, lr=1.0, wordNgrams=2, verbose=3, minCount=1,
+        loss="sigmoid"
     )
     print_results(*model.test(valid_data))
-    model.save_model("cooking.bin")
+    model.save_model("dbpedia.bin")
 
     model.quantize(input=train_data, qnorm=True, retrain=True, cutoff=100000)
     print_results(*model.test(valid_data))
-    model.save_model("cooking.ftz")
+    model.save_model("dbpedia.ftz")

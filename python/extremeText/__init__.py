@@ -10,10 +10,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from .FastText import train_supervised
-from .FastText import train_unsupervised
-from .FastText import load_model
-from .FastText import tokenize
-from .FastText import EOS
-from .FastText import BOW
-from .FastText import EOW
+from .ExtremeText import train_supervised
+from .ExtremeText import train_unsupervised
+from .ExtremeText import load_model
+from .ExtremeText import tokenize
+from .ExtremeText import EOS
+from .ExtremeText import BOW
+from .ExtremeText import EOW

@@ -10,17 +10,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import fasttext_pybind as fasttext
+import extremetext_pybind as extremetext
 import numpy as np
 
-loss_name = fasttext.loss_name
-model_name = fasttext.model_name
+loss_name = extremetext.loss_name
+model_name = extremetext.model_name
+tree_type_name = extremetext.tree_type_name
 EOS = "</s>"
 BOW = "<"
 EOW = ">"
 
 
-class _FastText():
+class _ExtremeText():
     """
     This class defines the API to inspect models and should not be used to
     create objects. It will be returned by functions such as load_model or
@@ -32,23 +33,23 @@ class _FastText():
     """
 
     def __init__(self, model=None):
-        self.f = fasttext.fasttext()
+        self.x = extremetext.extremetext()
         if model is not None:
-            self.f.loadModel(model)
+            self.x.loadModel(model)
 
     def is_quantized(self):
-        return self.f.isQuant()
+        return self.x.isQuant()
 
     def get_dimension(self):
         """Get the dimension (size) of a lookup vector (hidden layer)."""
-        a = self.f.getArgs()
+        a = self.x.getArgs()
         return a.dim
 
     def get_word_vector(self, word):
         """Get the vector representation of word."""
         dim = self.get_dimension()
-        b = fasttext.Vector(dim)
-        self.f.getWordVector(b, word)
+        b = extremetext.Vector(dim)
+        self.x.getWordVector(b, word)
         return np.array(b)
 
     def get_sentence_vector(self, text):
@@ -64,8 +65,8 @@ class _FastText():
             )
         text += "\n"
         dim = self.get_dimension()
-        b = fasttext.Vector(dim)
-        self.f.getSentenceVector(b, text)
+        b = extremetext.Vector(dim)
+        self.x.getSentenceVector(b, text)
         return np.array(b)
 
     def get_word_id(self, word):
@@ -73,19 +74,19 @@ class _FastText():
         Given a word, get the word id within the dictionary.
         Returns -1 if word is not in the dictionary.
         """
-        return self.f.getWordId(word)
+        return self.x.getWordId(word)
 
     def get_subword_id(self, subword):
         """
         Given a subword, return the index (within input matrix) it hashes to.
         """
-        return self.f.getSubwordId(subword)
+        return self.x.getSubwordId(subword)
 
     def get_subwords(self, word):
         """
         Given a word, get the subwords and their indicies.
         """
-        pair = self.f.getSubwords(word)
+        pair = self.x.getSubwords(word)
         return pair[0], np.array(pair[1])
 
     def get_input_vector(self, ind):
@@ -93,8 +94,8 @@ class _FastText():
         Given an index, get the corresponding vector of the Input Matrix.
         """
         dim = self.get_dimension()
-        b = fasttext.Vector(dim)
-        self.f.getInputVector(b, ind)
+        b = extremetext.Vector(dim)
+        self.x.getInputVector(b, ind)
         return np.array(b)
 
     def predict(self, text, k=1, threshold=0.0):
@@ -130,11 +131,11 @@ class _FastText():
 
         if type(text) == list:
             text = [check(entry) for entry in text]
-            all_probs, all_labels = self.f.multilinePredict(text, k, threshold)
+            all_probs, all_labels = self.x.multilinePredict(text, k, threshold)
             return all_labels, np.array(all_probs, copy=False)
         else:
             text = check(text)
-            pairs = self.f.predict(text, k, threshold)
+            pairs = self.x.predict(text, k, threshold)
             probs, labels = zip(*pairs)
             return labels, np.array(probs, copy=False)
 
@@ -143,18 +144,18 @@ class _FastText():
         Get a copy of the full input matrix of a Model. This only
         works if the model is not quantized.
         """
-        if self.f.isQuant():
+        if self.x.isQuant():
             raise ValueError("Can't get quantized Matrix")
-        return np.array(self.f.getInputMatrix())
+        return np.array(self.x.getInputMatrix())
 
     def get_output_matrix(self):
         """
         Get a copy of the full output matrix of a Model. This only
         works if the model is not quantized.
         """
-        if self.f.isQuant():
+        if self.x.isQuant():
             raise ValueError("Can't get quantized Matrix")
-        return np.array(self.f.getOutputMatrix())
+        return np.array(self.x.getOutputMatrix())
 
     def get_words(self, include_freq=False):
         """
@@ -163,7 +164,7 @@ class _FastText():
         does not include any subwords. For that please consult
         the function get_subwords.
         """
-        pair = self.f.getVocab()
+        pair = self.x.getVocab()
         if include_freq:
             return (pair[0], np.array(pair[1]))
         else:
@@ -177,9 +178,9 @@ class _FastText():
         will call and return get_words for this type of
         model.
         """
-        a = self.f.getArgs()
+        a = self.x.getArgs()
         if a.model == model_name.supervised:
-            pair = self.f.getLabels()
+            pair = self.x.getLabels()
             if include_freq:
                 return (pair[0], np.array(pair[1]))
             else:
@@ -203,18 +204,18 @@ class _FastText():
 
         if type(text) == list:
             text = [check(entry) for entry in text]
-            return self.f.multilineGetLine(text)
+            return self.x.multilineGetLine(text)
         else:
             text = check(text)
-            return self.f.getLine(text)
+            return self.x.getLine(text)
 
     def save_model(self, path):
         """Save the model to the given path"""
-        self.f.saveModel(path)
+        self.x.saveModel(path)
 
     def test(self, path, k=1):
         """Evaluate supervised model using file given by path"""
-        return self.f.test(path, k)
+        return self.x.test(path, k)
 
     def quantize(
         self,
@@ -233,7 +234,7 @@ class _FastText():
         Quantize the model reducing the size of the model and
         it's memory footprint.
         """
-        a = self.f.getArgs()
+        a = self.x.getArgs()
         if not epoch:
             epoch = a.epoch
         if not lr:
@@ -246,7 +247,7 @@ class _FastText():
             raise ValueError("Need input file path if retraining")
         if input is None:
             input = ""
-        self.f.quantize(
+        self.x.quantize(
             input, qout, cutoff, retrain, epoch, lr, thread, verbose, dsub,
             qnorm
         )
@@ -275,14 +276,32 @@ def _parse_loss_string(string):
         return loss_name.hs
     if string == "softmax":
         return loss_name.softmax
+    if string == "plt":
+        return loss_name.plt
+    if string == "sigmoid":
+        return loss_name.sigmoid
     else:
         raise ValueError("Unrecognized loss name")
 
 
+def _parse_tree_type_string(string):
+    if string == "huffman":
+        return tree_type_name.huffman
+    if string == "complete":
+        return tree_type_name.complete
+    if string == "kmeans":
+        return tree_type_name.kmeans
+    if string == "custom":
+        return tree_type_name.custom
+    else:
+        raise ValueError("Unrecognized tree type name")
+
+
 def _build_args(args):
+    args["treeType"] = _parse_tree_type_string(args["treeType"])
     args["model"] = _parse_model_string(args["model"])
     args["loss"] = _parse_loss_string(args["loss"])
-    a = fasttext.args()
+    a = extremetext.args()
     for (k, v) in args.items():
         setattr(a, k, v)
     a.output = ""  # User should use save_model
@@ -295,13 +314,13 @@ def _build_args(args):
 
 def tokenize(text):
     """Given a string of text, tokenize it and return a list of tokens"""
-    f = fasttext.fasttext()
+    f = extremetext.extremetext()
     return f.tokenize(text)
 
 
 def load_model(path):
     """Load a model given a filepath and return a model object."""
-    return _FastText(path)
+    return _ExtremeText(path)
 
 
 def train_supervised(
@@ -324,6 +343,19 @@ def train_supervised(
     label="__label__",
     verbose=2,
     pretrainedVectors="",
+
+    # extremeText args
+    wordsWeights=False,
+    tfidfWeights=False,
+    arity=2,
+    treeType="kmeans",
+    treeStructure="",
+    maxLeaves=100,
+    kMeansEps=0.001,
+    kMeansBalanced=True,
+    l2=0.0,
+    bagging=1.0,
+    ensemble=1
 ):
     """
     Train a supervised model and return a model object.
@@ -339,9 +371,9 @@ def train_supervised(
     """
     model = "supervised"
     a = _build_args(locals())
-    ft = _FastText()
-    fasttext.train(ft.f, a)
-    return ft
+    xt = _ExtremeText()
+    extremetext.train(xt.x, a)
+    return xt
 
 
 def train_unsupervised(
@@ -365,6 +397,19 @@ def train_unsupervised(
     label="__label__",
     verbose=2,
     pretrainedVectors="",
+
+    # extremeText args
+    wordsWeights=False,
+    tfidfWeights=False,
+    arity=2,
+    treeType="kmeans",
+    treeStructure="",
+    maxLeaves=100,
+    kMeansEps=0.001,
+    kMeansBalanced=True,
+    l2=0.0,
+    bagging=1.0,
+    ensemble=1
 ):
     """
     Train an unsupervised model and return a model object.
@@ -380,6 +425,6 @@ def train_unsupervised(
     part of the fastText repository.
     """
     a = _build_args(locals())
-    ft = _FastText()
-    fasttext.train(ft.f, a)
-    return ft
+    xt = _ExtremeText()
+    extremetext.train(xt.x, a)
+    return xt
