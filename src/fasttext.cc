@@ -775,7 +775,6 @@ void FastText::analogies(int32_t k) {
 void FastText::trainThread(int32_t threadId) {
   std::ifstream ifs(args_->input);
   utils::seek(ifs, threadId * utils::size(ifs) / args_->thread);
-  //std::this_thread::sleep_for(std::chrono::milliseconds(threadId * 100));
 
   Model model(input_, output_, args_, lossLayer_, threadId);
   if(lossLayer_ == nullptr){

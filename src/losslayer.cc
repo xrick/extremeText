@@ -57,7 +57,7 @@ real LossLayer::binaryLogistic(int32_t target, real label, real lr, real l2, Mod
 
     // Original update
     /*
-    model_->grad_.addRow(*model_->wo_, shift + target, lr * diff / args_->ensemble)
+    model_->grad_.addRow(*model_->wo_, shift + target, lr * diff / args_->ensemble);
     model_->wo_->addRow(model_->hidden_, shift + target, lr * diff);
      */
 

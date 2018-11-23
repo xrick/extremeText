@@ -365,9 +365,9 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
         loss += learnNode(n, label, lr, l2, model_);
     }
 
-    //std::cerr << "    Loss: " << loss << ", Loss sum: " << model_->loss_ << "\n";
     y_count += labels.size();
     ++x_count;
+
     return loss;
 }
 

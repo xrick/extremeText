@@ -53,7 +53,6 @@ Args::Args() {
   // Features args
   wordsWeights = false;
   tfidfWeights = false;
-  labelsOrder = false;
   addEosToken = true;
   weight = "__weight__";
   tag = "__tag__";
@@ -85,7 +84,6 @@ Args::Args() {
   // Bagging args
   bagging = 1.0;
   ensemble = 1;
-
 }
 
 std::string Args::lossToString(loss_name ln) const {
@@ -221,14 +219,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-tfidfWeights") {
         tfidfWeights = true;
         ai--;
-      } else if (args[ai] == "-unitNorm") {
-        unitNorm = true;
-        ai--;
       } else if (args[ai] == "-addEosToken") {
         addEosToken = true;
-        ai--;
-      } else if (args[ai] == "-labelsOrder") {
-        labelsOrder = true;
         ai--;
       } else if (args[ai] == "-probNorm") {
         probNorm = true;
@@ -404,7 +396,6 @@ void Args::save(std::ostream& out) {
   // PLT args
   out.write((char*) &(arity), sizeof(int));
   out.write((char*) &(l2), sizeof(real));
-  out.write((char*) &(unitNorm), sizeof(bool));
   out.write((char*) &(probNorm), sizeof(bool));
 
   // Ensemble args
@@ -438,7 +429,6 @@ void Args::load(std::istream& in) {
   // PLT args
   in.read((char*) &(arity), sizeof(int));
   in.read((char*) &(l2), sizeof(real));
-  in.read((char*) &(unitNorm), sizeof(bool));
   in.read((char*) &(probNorm), sizeof(bool));
 
   // Ensemble args

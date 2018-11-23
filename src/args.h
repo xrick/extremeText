@@ -66,8 +66,6 @@ class Args {
     bool wordsWeights;
     bool tfidfWeights;
     bool addEosToken;
-    bool labelsOrder;
-    bool unitNorm;
     std::string weight;
     std::string tag;
 

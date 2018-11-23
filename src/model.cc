@@ -146,7 +146,7 @@ real Model::computeHidden(const std::vector<int32_t>& input, const std::vector<r
     hidden.addRow(*wi_, input[it], input_values[it]);
     values_sum += input_values[it];
   }
-  if(!args_->unitNorm) hidden.mul(1.0 / values_sum);
+  hidden.mul(1.0 / values_sum);
 
   //assert(input.size() == values_sum);
   return values_sum;
@@ -418,6 +418,8 @@ void Model::initLog() {
 }
 
 real Model::log(real x) const {
+  //return std::log(x+1e-5);
+
   if (x > 1.0) {
     return 0.0;
   }
@@ -430,6 +432,8 @@ real Model::std_log(real x) const {
 }
 
 real Model::sigmoid(real x) const {
+  //return 1.0 / (1.0 + std::exp(-x));
+
   if (x < -MAX_SIGMOID) {
     return 0.0;
   } else if (x > MAX_SIGMOID) {
