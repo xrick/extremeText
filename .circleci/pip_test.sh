@@ -8,5 +8,5 @@
 # of patent rights can be found in the PATENTS file in the same directory.
 #
 
-sudo pip install --index-url https://test.pypi.org/simple/ fasttext
+sudo pip install --index-url https://test.pypi.org/simple/ extremetext
 python runtests.py -u
