@@ -296,7 +296,7 @@ class TestFastTextUnitPy(unittest.TestCase):
                 foundEOS = True
             else:
                 self.assertEqual(words_python[word], freq)
-        # EOS is special to fastText, but still part of the vocab
+        # EOS is special to fastText/extremeText, but still part of the vocab
         self.assertEqual(len(words_python), len(words) - 1)
         self.assertTrue(foundEOS)
 

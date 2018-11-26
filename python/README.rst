@@ -21,7 +21,7 @@ You will need
    `SciPy <https://www.scipy.org/>`__
 -  `pybind11 <https://github.com/pybind/pybind11>`__
 
-Building fastText
+Building extremeText
 -----------------
 
 The easiest way to get extremeText is to use
@@ -100,19 +100,19 @@ IMPORTANT: Preprocessing data / enconding conventions
 
 In general it is important to properly preprocess your data. In
 particular our example scripts in the `root
-folder <https://github.com/facebookresearch/fastText>`__ do this.
+folder <https://github.com/mwydmuch/extremeText>`__ do this.
 
-extremeText like fastText assumes UTF-8 encoded text. All text must be `unicode for
+extremeText like extremeText assumes UTF-8 encoded text. All text must be `unicode for
 Python2 <https://docs.python.org/2/library/functions.html#unicode>`__
 and `str for
 Python3 <https://docs.python.org/3.5/library/stdtypes.html#textseq>`__.
 The passed text will be `encoded as UTF-8 by
 pybind11 <https://pybind11.readthedocs.io/en/master/advanced/cast/strings.html?highlight=utf-8#strings-bytes-and-unicode-conversions>`__
-before passed to the fastText C++ library. This means it is important to
+before passed to the extremeText C++ library. This means it is important to
 use UTF-8 encoded text when building a model. On Unix-like systems you
 can convert text using `iconv <https://en.wikipedia.org/wiki/Iconv>`__.
 
-fastText will tokenize (split text into pieces) based on the following
+extremeText like fastText will tokenize (split text into pieces) based on the following
 ASCII characters (bytes). In particular, it is not aware of UTF-8
 whitespace. We advice the user to convert UTF-8 whitespace / word
 boundaries into one of the following symbols as appropiate.

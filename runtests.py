@@ -20,8 +20,8 @@ from __future__ import unicode_literals
 
 import unittest
 import argparse
-from fastText.tests import gen_tests
-from fastText.tests import gen_unit_tests
+from extremeText.tests import gen_tests
+from extremeText.tests import gen_unit_tests
 
 
 def run_tests(tests):

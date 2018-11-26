@@ -30,7 +30,7 @@ class _ExtremeText():
 
     In general this API assumes to be given only unicode for Python2 and the
     Python3 equvalent called str for any string-like arguments. All unicode
-    strings are then encoded as UTF-8 and fed to the fastText C++ API.
+    strings are then encoded as UTF-8 and fed to the extremeText C++ API.
     """
 
     def __init__(self, model=None):
@@ -367,7 +367,7 @@ def train_supervised(
     as tokenizer.perl mentioned here: http://www.statmt.org/wmt07/baseline.html
 
     The input file must must contain at least one label per line. For an
-    example consult the example datasets which are part of the fastText
+    example consult the example datasets which are part of the extremeText
     repository such as the dataset pulled by classification-example.sh.
     """
     model = "supervised"
@@ -423,7 +423,7 @@ def train_unsupervised(
     The input field must not contain any labels or use the specified label prefix
     unless it is ok for those words to be ignored. For an example consult the
     dataset pulled by the example script word-vector-example.sh, which is
-    part of the fastText repository.
+    part of the extremeText repository.
     """
     a = _build_args(locals())
     xt = _ExtremeText()
