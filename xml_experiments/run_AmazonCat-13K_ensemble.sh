@@ -2,8 +2,6 @@
 
 DATASET_NAME="AmazonCat-13K"
 FILES_PREFIX="amazonCat"
-
-# Huffman tree params
-PARAMS="-lr 0.05 -epoch 20 -arity 64 -dim 250 -treeType huffman -bagging 0.5 -ensemble 3 -wordsWeights"
+PARAMS="-lr 0.1 -epoch 20 -arity 2 -dim 500 -l2 0.001 -wordsWeights -treeType kmeans -ensemble 3"
 
 bash run_xml.sh $DATASET_NAME $FILES_PREFIX "$PARAMS"

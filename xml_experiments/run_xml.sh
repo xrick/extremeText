@@ -10,7 +10,7 @@ THREADS=8
 mkdir -p models
 
 SCRIPT_DIR=$( dirname "${BASH_SOURCE[0]}" )
-BIN=${SCRIPT_DIR}/../fasttext
+BIN=${SCRIPT_DIR}/../extremetext
 
 if [ ! -e datasets4fastText ]; then
     git clone https://github.com/mwydmuch/datasets4fastText.git
@@ -38,7 +38,6 @@ if [ ! -e $TRAIN ]; then
 fi
 
 # Model training
-
 mkdir -p models
 MODEL="models/${FILES_PREFIX}_$(echo $PARAMS | tr ' ' '_')"
 
@@ -58,20 +57,16 @@ echo "Model size: $(ls -lh ${MODEL}.bin | grep -E '[0-9\.,]+[BMG]' -o)"
 #if [ ! -e ${MODEL}.ftz ]; then
 #    time $BIN quantize -output $MODEL -input $TRAIN -thread $THREADS $QUANTIZE_PARAMS
 #fi
-#
+
 #time $BIN test ${MODEL}.ftz ${TEST} 1
 #time $BIN test ${MODEL}.ftz ${TEST} 3
 #time $BIN test ${MODEL}.ftz ${TEST} 5
-#
+
 #echo "Quantized model: ${MODEL}.ftz"
 #echo "Quantized model size: $(ls -lh ${MODEL}.ftz | grep -E '[0-9\.,]+[BMG]' -o)"
 
-# Saving documents
-#$BIN save-all ${MODEL}.bin ${TRAIN} train
-#$BIN save-all ${MODEL}.bin ${TEST} test
-
 # Get probabilities for labels in the file
-#time $BIN get-prob ${MODEL}.bin ${TEST} ${MODEL}_test.prob 1
+#time $BIN get-prob ${MODEL}.bin ${TEST} ${MODEL}_test.prob ${THREADS}
 
 # Predict labels and get probabilities for labels in the file
-#time $BIN predict-prob ${MODEL}.bin ${TEST} 5 0 ${MODEL}_test.pred-prob 1
+#time $BIN predict-prob ${MODEL}.bin ${TEST} 5 0 ${MODEL}_test.pred-prob ${THREADS}
