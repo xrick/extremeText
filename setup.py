@@ -144,7 +144,7 @@ setup(
     version=__version__,
     author='Marek Wydmuch',
     author_email='mwydmuch@cs.put.poznan.pl',
-    description='extremeText Python bindings',
+    description='A Python interface for extremeText library',
     long_description=_get_readme(),
     ext_modules=ext_modules,
     url='https://github.com/mwydmuch/extremeText',

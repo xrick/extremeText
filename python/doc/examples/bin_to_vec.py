@@ -19,7 +19,7 @@ import errno
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description=("Print fasttext .vec file to stdout from .bin file")
+        description=("Print fasttext/extremetext .vec file to stdout from .bin file")
     )
     parser.add_argument(
         "model",

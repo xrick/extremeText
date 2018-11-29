@@ -51,6 +51,7 @@ if __name__ == "__main__":
     model = train_unsupervised(
         input=os.path.join(os.getenv("DATADIR", ''), 'fil9'),
         model='skipgram',
+        verbose=3
     )
     model.save_model("fil9.bin")
     dataset, corr, oov = compute_similarity('rw.txt')

@@ -53,7 +53,8 @@ Args::Args() {
   // Features args
   wordsWeights = false;
   tfidfWeights = false;
-  addEosToken = true;
+  addEosToken = false;
+  eosWeight = 1.0;
   weight = "__weight__";
   tag = "__tag__";
 
@@ -72,16 +73,15 @@ Args::Args() {
   probNorm = false;
   maxLeaves = 100;
 
-  // KMeans
+  // K-means
   kMeansEps = 0.001;
   kMeansBalanced = true;
 
   // Update args
   l2 = 0;
   fobos = false;
-  labelsWeights = false;
 
-  // Bagging args
+  // Ensemble args
   bagging = 1.0;
   ensemble = 1;
 }
@@ -120,6 +120,20 @@ std::string Args::modelToString(model_name mn) const {
       return "sup";
   }
   return "Unknown model name!"; // should never happen
+}
+
+std::string Args::treeTypeToString(tree_type_name ttn) const {
+  switch (ttn) {
+    case tree_type_name::huffman:
+      return "huffman";
+    case tree_type_name::complete:
+      return "complete";
+    case tree_type_name::kmeans:
+      return "kmeans";
+    case tree_type_name::custom:
+      return "custom";
+  }
+  return "Unknown tree type name!"; // should never happen
 }
 
 void Args::parseArgs(const std::vector<std::string>& args) {
@@ -222,6 +236,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-addEosToken") {
         addEosToken = true;
         ai--;
+      } else if (args[ai] == "-eosWeight") {
+        eosWeight = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-probNorm") {
         probNorm = true;
         ai--;
@@ -252,9 +268,6 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         l2 = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-fobos") {
         fobos = true;
-        ai--;
-      } else if (args[ai] == "-labelsWeights") {
-        labelsWeights = true;
         ai--;
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
@@ -298,6 +311,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
   if (wordNgrams <= 1 && maxn == 0) {
     bucket = 0;
   }
+  if (wordsWeights) {
+    tfidfWeights = false;
+  }
 }
 
 void Args::printHelp() {
@@ -327,7 +343,11 @@ void Args::printDictionaryHelp() {
     << "  -minn               min length of char ngram [" << minn << "]\n"
     << "  -maxn               max length of char ngram [" << maxn << "]\n"
     << "  -t                  sampling threshold [" << t << "]\n"
-    << "  -label              labels prefix [" << label << "]\n";
+    << "  -label              labels prefix [" << label << "]\n"
+    << "  -weight             document weight prefix [" << weight << "]\n"
+    << "  -tag                tags prefix [" <<  tag << "]\n"
+    << "  -tfidfWeights       calculate TF-IDF weights for words\n"
+    << "  -wordsWeights       read words weights from file (format: <word>:<weights>)\n";
 }
 
 void Args::printTrainingHelp() {
@@ -335,16 +355,25 @@ void Args::printTrainingHelp() {
     << "\nThe following arguments for training are optional:\n"
     << "  -lr                 learning rate [" << lr << "]\n"
     << "  -lrUpdateRate       change the rate of updates for the learning rate [" << lrUpdateRate << "]\n"
-    << "  -l2                 l2 regularization [" << l2 << "]\n"
+    << "  -l2                 L2 regularization [" << l2 << "]\n"
+    << "  -fobos              use FOBOS update [" << boolToString(fobos) << "]\n"
     << "  -dim                size of word vectors [" << dim << "]\n"
     << "  -ws                 size of the context window [" << ws << "]\n"
     << "  -epoch              number of epochs [" << epoch << "]\n"
     << "  -neg                number of negatives sampled [" << neg << "]\n"
-    << "  -loss               loss function {ns, hs, softmax} [" << lossToString(loss) << "]\n"
+    << "  -loss               loss function {ns, hs, softmax, plt, sigmoid} [" << lossToString(loss) << "]\n"
     << "  -thread             number of threads [" << thread << "]\n"
     << "  -pretrainedVectors  pretrained word vectors for supervised learning ["<< pretrainedVectors <<"]\n"
-    << "  -wordsWeights       TODO"
-    << "  -saveOutput         whether output params should be saved [" << boolToString(saveOutput) << "]\n";
+    << "  -saveOutput         whether output params should be saved [" << boolToString(saveOutput) << "]\n"
+    << "  -saveVectors        whether word vectors should be saved [" << boolToString(saveVectors) << "]\n"
+    << "  -treeType           type of PLT {complete, huffman, kmeans} [" << treeTypeToString(treeType) << ")\n"
+    << "  -arity              arity of PLT [" << arity << "]\n"
+    << "  -maxLeaves          maximum number of leaves (labels) in one internal node of PLT [" << maxLeaves <<"]\n"
+    << "  -kMeansEps          stopping criteria for k-means clustering [" << kMeansEps << "]\n"
+    << "  -ensemble           size of the ensemble [" << ensemble << "]\n"
+    << "  -bagging            bagging ratio [" << bagging << "]\n"
+    << "  -addEosToken        add EOS token at the end of document [" << boolToString(addEosToken) << "]\n"
+    << "  -eosWeight          weight of EOS token [" << eosWeight << "]\n";
 }
 
 void Args::printQuantizationHelp() {
@@ -360,14 +389,19 @@ void Args::printQuantizationHelp() {
 void Args::printInfo(){
   std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n  Features: ";
   if(model == model_name::sup){
-      if(tfidfWeights) std::cerr << "tf-idf weights\n";
-      else if(wordsWeights) std::cerr << "word weights\n";
-      else std::cerr << "bow\n";
+      if(tfidfWeights) std::cerr << "TF-IDF weights";
+      else if(wordsWeights) std::cerr << "words weights";
+      else std::cerr << "BOW";
   }
-  if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << ", bagging ratio: " << bagging << "\n";
-  std::cerr << "  Lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch
-    << ", buckets: " << bucket << ", neg: " << neg << "\n";
-  //std::cerr << "  Fobos: " << fobos << ", prob. norm.: " << probNorm << "\n";
+  std::cerr << ", buckets: " << bucket << std::endl;
+  if(loss == loss_name::plt) std::cerr << "  Tree type: " << treeTypeToString(treeType) << ", arity: " << arity << ", maxLeaves: " << maxLeaves;
+  if(loss == loss_name::plt && treeType == tree_type_name::kmeans) std::cerr << ", kMeansEps: " << kMeansEps << std::endl;
+  else std::cerr << std::endl;
+  if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << std::endl; //", bagging ratio: " << bagging << std::endl;
+  std::cerr << "  Update: ";
+  if(fobos) std::cerr << "FOBOS";
+  else std::cerr << "SGD";
+  std::cerr << ", lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch << ", neg: " << neg << std::endl;
 }
 
 void Args::save(std::ostream& out) {
@@ -450,6 +484,17 @@ void Args::dump(std::ostream& out) const {
   out << "maxn" << " " << maxn << std::endl;
   out << "lrUpdateRate" << " " << lrUpdateRate << std::endl;
   out << "t" << " " << t << std::endl;
+  out << "l2" << " " << l2 << std::endl;
+  out << "fobos" << " " << fobos << std::endl;
+  out << "ensemble" << " " << ensemble << std::endl;
+  if(loss == loss_name::plt) {
+    out << "treeType" << " " << treeTypeToString(treeType) << std::endl;
+    out << "arity" << " " << arity << std::endl;
+    out << "maxLeaves" << " " << maxLeaves << std::endl;
+    if(treeType == tree_type_name::kmeans) {
+      out << "kMeansEps" << " " << kMeansEps << std::endl;
+    }
+  }
 }
 
 }

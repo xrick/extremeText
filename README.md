@@ -2,6 +2,61 @@
 
 extremeText is an extension of [fastText](https://github.com/facebookresearch/fastText) library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
+extremeText implements:
+
+* Probabilistic Labels Tree (PLT) loss for extreme multi-Label classification with top-down hierarchical clustering (k-means) for tree building,
+* sigmoid loss for multi-label classification,
+* L2 regularization and FOBOS update for all losses,
+* ensemble of loss layers with bagging,
+* calculation of hidden (document) vector as a weighted average of the word vectors,
+* calculation of TF-IDF weights for words.
+
+## Installation
+
+### Building executable
+
+extremeText like fastText can be build as executable using Make (recommended) or/and CMake:
+
+```
+$ git clone https://github.com/mwydmuch/extremeText.git
+$ cd extremeText
+(optional) $ cmake .
+$ make
+```
+
+This will produce object files for all the classes as well as the main binary `extremetext`.
+
+### Python package
+
+The easiest way to get extremeText is to use [pip](https://pip.pypa.io/en/stable/).
+
+```
+$ pip install extremetext
+```
+
+Installing on MacOS may require setting `MACOSX_DEPLOYMENT_TARGET=10.9` first:
+```
+$ export MACOSX_DEPLOYMENT_TARGET=10.9
+$ pip install extremetext
+```
+
+The latest version of extremeText can be build from sources using pip or alternatively setuptools.
+
+```
+$ git clone https://github.com/mwydmuch/extremeText.git
+$ cd extremeText
+$ pip install .
+(or) $ python setup.py install
+```
+
+Now you can import this library with:
+
+```
+import extremeText
+```
+
+## Usage
+
 extremeText adds new options for fastText supervised command:
 
 ```
@@ -12,71 +67,42 @@ New losses for multi-label classification:
   -loss plt           (Probabilistic Labels Tree)
 
 With the following optional arguments:
-  -treeType           tree type of PLT: complete, huffman, kmeans (default = kmeans)
-  -ensemble           number of trees in ensemble (default = 1)
-  -bagging            bagging ration for ensemble (default = 1.0)
-  -l2                 l2 regularization (default = 0)
-  -tfidfWeights       calculates TF-IDF weights for words
-  -wordsWeights       reads words weights from file (format: <word>:<weights>)
+  General:
+  -l2                 L2 regularization (default = 0)
+  -fobos              use FOBOS update
+  -tfidfWeights       calculate TF-IDF weights for words
+  -wordsWeights       read word weights from file (format: <word>:<weights>)
   -weight             document weight prefix (default = __weight__; format: <weight prefix>:<document weight>)
-  -tag                tags prefix (default = __tag__), tags are words tha are ingnored, by are outputed with prediction
+  -tag                tags prefix (default = __tag__), tags are ignored words, that are outputed with prediction
+  -addEosToken        add EOS token at the end of document (default = 0)
+  -eosWeight          weight of EOS token (default = 1.0)
+  
+  PLT (Probabilistic Labels Tree):
+  -treeType           type of PLT: complete, huffman, kmeans (default = kmeans)
+  -arity              arity of PLT (default = 2)
+  -maxLeaves          maximum number of leaves (labels) in one internal node of PLT (default = 100)
+  -kMeansEps          stopping criteria for k-means clustering (default = 0.001)
+  
+  Ensemble:
+  -ensemble           size of the ensemble (default = 1)
+  -bagging            bagging ratio (default = 1.0)
 ```
 
-extremeText adds new commands and makes other to work in parallel:
+extremeText also adds new commands and makes other to work in parallel:
 ```
 $ ./extremetext predict[-prob] <model> <test-data> [<k>] [<th>] [<output>] [<thread>]
 $ ./extremetext get-prob <model> <input> [<th>] [<output>] [<thread>]
 ```
 
-## Installation
-
-### Building executable
-
-extremeText like fastText can be build as executable using Make or/and CMake:
-
-```
-$ git clone https://github.com/mwydmuch/extremeText.git
-$ cd extremeText
-$ (optional) cmake .
-$ make
-```
-
-This will produce object files for all the classes as well as the main binary `extremetext`.
-
-### Python package
-
-The easiest way to get extremeText is to use [pip](https://pip.pypa.io/en/stable/):
-
-```
-pip install extremetext
-```
-
-The latest version of extremeText can be build from sources:
-
-```
-$ git clone https://github.com/mwydmuch/extremeText.git
-$ cd extremeText
-$ pip install .
-```
-
-Alternatively you can also install extremeText using setuptools:
-
-```
-$ git clone https://github.com/mwydmuch/extremeText.git
-$ cd extremeText
-$ python setup.py install
-```
-
 ## Reference
 
-Please cite below work if using this code for classification.
+Please cite below work if using this code for extreme classification.
 
 M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński, [*A no-regret generalization of hierarchical softmax to extreme multi-label classification*](https://arxiv.org/abs/1810.11671)
 
 ## TODO
-* Merge with latest changes from fastText.
-* Rewrite vanilla fastText losses as extremeText loss layers to support new features. 
-
+* Merge with the latest changes from fastText.
+* Rewrite vanilla fastText losses as extremeText loss layers to support all new features. 
 
 ---
 

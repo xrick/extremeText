@@ -54,9 +54,23 @@ void Model::setQuantizePointer(std::shared_ptr<QMatrix> qwi,
 
 real Model::binaryLogistic(int32_t target, bool label, real lr) {
   real score = sigmoid(wo_->dotRow(hidden_, target));
+  real diff = real(label) - score;
+
+  // Original update
+  /*
   real alpha = lr * (real(label) - score);
   grad_.addRow(*wo_, target, alpha);
   wo_->addRow(hidden_, target, alpha);
+  */
+
+  if(args_->fobos){
+    grad_.addRowL2Fobos(*wo_, target, lr, diff, args_->l2);
+    wo_->addRowL2Fobos(hidden_, target, lr, diff, args_->l2);
+  } else {
+    grad_.addRowL2(*wo_, target, lr, diff, args_->l2);
+    wo_->addRowL2(hidden_, target, lr, diff, args_->l2);
+  }
+
   if (label) {
     return -log(score);
   } else {

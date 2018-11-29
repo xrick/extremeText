@@ -2,6 +2,15 @@
 
 [extremeText](https://github.com/mwydmuch/extremeText) is an extension of [fastText](https://github.com/facebookresearch/fastText) library for multi-label classification including extreme cases with hundreds of thousands and millions of labels.
 
+[extremeText](https://github.com/mwydmuch/extremeText) implements:
+
+* Probabilistic Labels Tree (PLT) loss for extreme multi-Label classification with top-down hierarchical clustering (k-means) for tree building,
+* sigmoid loss for multi-label classification,
+* L2 regularization and FOBOS update for all losses,
+* ensemble of loss layers with bagging,
+* calculation of hidden (document) vector as a weighted average of the word vectors,
+* calculation of TF-IDF weights for words.
+
 ## Requirements
 
 [extremeText](https://github.com/mwydmuch/extremeText) builds on modern Mac OS and Linux distributions.
@@ -18,26 +27,25 @@ You will need:
 
 ## Installing extremeText
 
-The easiest way to get extremeText is to use [pip](https://pip.pypa.io/en/stable/):
+The easiest way to get [extremeText](https://github.com/mwydmuch/extremeText) is to use [pip](https://pip.pypa.io/en/stable/).
 
 ```
-pip install extremetext
+$ pip install extremetext
 ```
 
-The latest version of extremeText can be build from sources:
+Installing on MacOS may require setting `MACOSX_DEPLOYMENT_TARGET=10.9` first:
+```
+$ export MACOSX_DEPLOYMENT_TARGET=10.9
+$ pip install extremetext
+```
+
+The latest version of [extremeText](https://github.com/mwydmuch/extremeText) can be build from sources using pip or alternatively setuptools.
 
 ```
 $ git clone https://github.com/mwydmuch/extremeText.git
 $ cd extremeText
 $ pip install .
-```
-
-Alternatively you can also install extremeText using setuptools:
-
-```
-$ git clone https://github.com/mwydmuch/extremeText.git
-$ cd extremeText
-$ python setup.py install
+(or) $ python setup.py install
 ```
 
 Now you can import this library with:
@@ -54,7 +62,7 @@ We recommend you look at the [examples within the doc folder](https://github.com
 
 As with any package you can get help on any Python function using the help function.
 
-For example
+For example:
 
 ```
 +>>> import extremeText
@@ -84,7 +92,7 @@ FUNCTIONS
 
 ## IMPORTANT: Preprocessing data / enconding conventions
 
-In general it is important to properly preprocess your data. In particular our example scripts in the [root folder](https://github.com/mwydmuch/extremeText/extremeText) do this. 
+In general it is important to properly preprocess your data. Example scripts in the [root folder](https://github.com/mwydmuch/extremeText/extremeText) do this. 
 
 extremeText like fastText assumes UTF-8 encoded text. All text must be [unicode for Python2](https://docs.python.org/2/library/functions.html#unicode) and [str for Python3](https://docs.python.org/3.5/library/stdtypes.html#textseq). The passed text will be [encoded as UTF-8 by pybind11](https://pybind11.readthedocs.io/en/master/advanced/cast/strings.html?highlight=utf-8#strings-bytes-and-unicode-conversions) before passed to the extremeText C++ library. This means it is important to use UTF-8 encoded text when building a model. On Unix-like systems you can convert text using [iconv](https://en.wikipedia.org/wiki/Iconv).
 
@@ -100,3 +108,9 @@ extremeText will tokenize (split text into pieces) based on the following ASCII 
 The newline character is used to delimit lines of text. In particular, the EOS token is appended to a line of text if a newline character is encountered. The only exception is if the number of tokens exceeds the MAX\_LINE\_SIZE constant as defined in the [Dictionary header](https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.h). This means if you have text that is not separate by newlines, such as the [fil9 dataset](http://mattmahoney.net/dc/textdata), it will be broken into chunks with MAX\_LINE\_SIZE of tokens and the EOS token is not appended.
 
 The length of a token is the number of UTF-8 characters by considering the [leading two bits of a byte](https://en.wikipedia.org/wiki/UTF-8#Description) to identify [subsequent bytes of a multi-byte sequence](https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.cc). Knowing this is especially important when choosing the minimum and maximum length of subwords. Further, the EOS token (as specified in the [Dictionary header](https://github.com/mwydmuch/extremeText/blob/master/src/dictionary.h)) is considered a character and will not be broken into subwords.
+
+## Reference
+
+Please cite below work if using this package for extreme classification.
+
+M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński, [A no-regret generalization of hierarchical softmax to extreme multi-label classification](https://arxiv.org/abs/1810.11671)

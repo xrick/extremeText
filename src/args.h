@@ -28,6 +28,7 @@ class Args {
     std::string lossToString(loss_name) const;
     std::string boolToString(bool) const;
     std::string modelToString(model_name) const;
+    std::string treeTypeToString(tree_type_name) const;
 
   public:
     Args();
@@ -66,6 +67,7 @@ class Args {
     bool wordsWeights;
     bool tfidfWeights;
     bool addEosToken;
+    real eosWeight;
     std::string weight;
     std::string tag;
 
@@ -84,18 +86,17 @@ class Args {
     bool randomTree;
     int maxLeaves;
 
-    // KMeans
+    // K-means
     real kMeansEps;
     bool kMeansBalanced;
 
     // Update args
     bool fobos;
     real l2;
-    bool labelsWeights;
 
     // Ensemble args
-    real bagging;
     int ensemble;
+    real bagging;
 
     void parseArgs(const std::vector<std::string>& args);
     void printHelp();

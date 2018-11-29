@@ -30,7 +30,7 @@ enum class entry_type : int8_t {word=0, label=1};
 struct entry {
   std::string word;
   int64_t count;
-  int32_t doc_count;
+  int64_t doc_count;
   entry_type type;
   std::vector<int32_t> subwords;
 };
@@ -64,7 +64,7 @@ class Dictionary {
     int32_t nwords_;
     int32_t nlabels_;
     int64_t ntokens_;
-    int32_t ndocs_;
+    int64_t ndocs_;
 
     int64_t pruneidx_size_;
     std::unordered_map<int32_t, int32_t> pruneidx_;

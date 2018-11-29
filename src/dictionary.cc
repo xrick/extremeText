@@ -227,6 +227,7 @@ bool Dictionary::readWord(std::istream& in, std::string& word, real& value) cons
       if (word.empty()) {
         if (c == '\n') {
           word += EOS;
+          value = args_->eosWeight;
           return true;
         }
         continue;
@@ -421,7 +422,7 @@ real Dictionary::getLine(std::istream& in,
   words_values.clear();
   tags.clear();
 
-  // for tf-idf
+  // For TF-IDF
   std::vector<int32_t> doc_counts;
 
   while (readWord(in, token, value)) {
@@ -434,6 +435,8 @@ real Dictionary::getLine(std::istream& in,
       continue;
     }
 
+    if(token == EOS && !args_->addEosToken) break;
+
     uint32_t h = utils::hash(token);
     int32_t wid = getId(token, h);
     entry_type type = wid < 0 ? getType(token) : getType(wid);
@@ -442,7 +445,7 @@ real Dictionary::getLine(std::istream& in,
     if (type == entry_type::word) {
       if (args_->tfidfWeights) {
         addSubwordsTfIdf(words, token, doc_counts, wid);
-        // TODO: support for word hashes for tf-idf
+        // TODO: support for word hashes for TF-IDF
       } else {
         addSubwords(words, token, words_values, value, wid);
         word_hashes.push_back(h);
@@ -450,15 +453,9 @@ real Dictionary::getLine(std::istream& in,
     } else if (type == entry_type::label && wid >= 0) {
       labels.push_back(wid - nwords_);
     }
+
     if (token == EOS) break;
   }
-
-  //TODO: add support for word ngrams
-  /*
-  addWordNgrams(words, word_hashes, args_->wordNgrams);
-  while(words.size() != words_values.size())
-    words_values.push_back(1);
-   */
 
   real values_sum = 0;
   if(args_->tfidfWeights){
@@ -478,23 +475,21 @@ real Dictionary::getLine(std::istream& in,
       values_sum += tfidf;
     }
   } else {
-    assert(words.size() == words_values.size());
     for(auto &it : words_values)
       values_sum += it;
+  }
+
+  // TODO: support for wordNgrams for TF-IDF
+  if(!args_->tfidfWeights && !args_->wordsWeights) {
+    addWordNgrams(words, word_hashes, args_->wordNgrams);
+    while (words.size() != words_values.size())
+      words_values.push_back(1.0);
   }
 
   for(auto &it : words_values)
     it /= values_sum / words.size();
 
-  // Add EOS word
-  auto eosId = getId(EOS, utils::hash(EOS));
-  if(args_->addEosToken && words.back() != eosId) {
-    words.push_back(eosId);
-    words_values.push_back(1.0);
-  } else if (words.back() == eosId){
-    words.pop_back();
-    words_values.pop_back();
-  }
+  assert(words.size() == words_values.size());
 
   return weight;
 }

@@ -424,49 +424,48 @@ real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
     std::vector<NodePLT*> path;
     NodePLT *n = tree_leaves[label];
-    real p = 1.0;
 
     if(!args_->probNorm){
-        p = predictNode(n, hidden, model_);
+        real p = predictNode(n, hidden, model_);
         while(n->parent) {
             n = n->parent;
             p = p * predictNode(n, hidden, model_);
         }
         assert(n == tree_root);
         return p;
-    }
 
-    path.push_back(n);
-    while (n->parent) {
-        n = n->parent;
+    } else {
         path.push_back(n);
-    }
-
-    assert(tree_root == n);
-    assert(tree_root == path.back());
-
-    p = predictNode(tree_root, hidden, model_);
-    for(auto n = path.rbegin(); n != path.rend(); ++n){
-        if ((*n)->label < 0) {
-
-            //TODO: rewrite
-            /*
-            for (auto child : (*n)->children) {
-                normChildren.push_back({child, })
-                child->p = cp * predictNode(child, hidden, model_);
-                sumOfP += child->p;
-            }
-            if ((sumOfP < cp) //&& (sumOfP > 10e-6)) {
-                for (auto child : (*n)->children) {
-                    child->p = (child->p * cp) / sumOfP;
-                }
-            }
-            float sumOfP = 0.0f;
-             */
+        while (n->parent) {
+            n = n->parent;
+            path.push_back(n);
         }
-    }
 
-    return p;
+        assert(tree_root == n);
+        assert(tree_root == path.back());
+
+        real p = predictNode(tree_root, hidden, model_);
+        for (auto n = path.rbegin(); n != path.rend(); ++n) {
+            if ((*n)->label < 0) {
+                //TODO: rewrite this part
+                /*
+                for (auto child : (*n)->children) {
+                    normChildren.push_back({child, })
+                    child->p = cp * predictNode(child, hidden, model_);
+                    sumOfP += child->p;
+                }
+                if ((sumOfP < cp) //&& (sumOfP > 10e-6)) {
+                    for (auto child : (*n)->children) {
+                        child->p = (child->p * cp) / sumOfP;
+                    }
+                }
+                float sumOfP = 0.0f;
+                 */
+            }
+        }
+
+        return p;
+    }
 }
 
 void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
@@ -492,9 +491,11 @@ int32_t PLT::getSize(){
 }
 
 void PLT::printInfo(){
+  /*
   std::cerr << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
   std::cerr << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
   std::cerr << "  Avg y: " << static_cast<float>(y_count) / x_count << "\n";
+  */
 }
 
 void PLT::save(std::ostream& out){
