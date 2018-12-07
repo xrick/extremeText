@@ -430,7 +430,7 @@ void FastText::skipgram(Model& model, real lr,
   }
 }
 
-std::tuple<uint64_t, double, double, double> FastText::test(
+std::tuple<uint64_t, double, double, double, double> FastText::test(
     std::istream& in,
     int32_t k,
     real threshold) {
@@ -442,6 +442,7 @@ std::tuple<uint64_t, double, double, double> FastText::test(
 
   int32_t nexamples = 0, nlabels = 0, npredictions = 0;
   double precision = 0.0;
+  double f1_at_k = 0.0, f1_at_k_2 = 0.0;
   std::unordered_set<int32_t> coverage;
   std::vector<int32_t> line, labels;
   std::vector<real> line_values;
@@ -451,19 +452,31 @@ std::tuple<uint64_t, double, double, double> FastText::test(
     if (labels.size() > 0 && line.size() > 0) {
       std::vector<std::pair<real, int32_t>> modelPredictions;
       model_->predict(line, line_values, k, threshold, modelPredictions);
+
+      double point_precision = 0;
+
       for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
         if (std::find(labels.begin(), labels.end(), it->second) != labels.end()) {
-          precision += 1.0;
+          point_precision += 1.0;
           coverage.insert(it->second);
         }
       }
+
+      f1_at_k += point_precision * 2.0 / (k + labels.size());
       nexamples++;
+      precision += point_precision;
       nlabels += labels.size();
       npredictions += modelPredictions.size();
     }
   }
-  return std::tuple<uint64_t, double, double, double>(
-      nexamples, precision / npredictions, precision / nlabels, static_cast<double>(coverage.size())/ dict_->nlabels());
+
+  return std::tuple<uint64_t, double, double, double, double>(
+      nexamples,
+      precision / npredictions,
+      precision / nlabels,
+      static_cast<double>(coverage.size()) / dict_->nlabels(),
+      f1_at_k / nexamples
+  );
 }
 
 void FastText::startPredictThreads(

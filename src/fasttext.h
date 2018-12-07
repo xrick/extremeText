@@ -99,7 +99,7 @@ class FastText {
   std::vector<int32_t> selectEmbeddings(int32_t) const;
   void getSentenceVector(std::istream&, Vector&);
   void quantize(const Args);
-  std::tuple<uint64_t, double, double, double> test(std::istream&, int32_t, real = 0.0);
+  std::tuple<uint64_t, double, double, double, double> test(std::istream&, int32_t, real = 0.0);
 
   // Predict and test commands
   void startPredictThreads(std::string, std::string, int32_t, int32_t, bool, real);

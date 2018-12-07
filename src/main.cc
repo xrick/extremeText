@@ -175,7 +175,7 @@ void test(const std::vector<std::string>& args) {
   FastText fasttext;
   fasttext.loadModel(args[2]);
 
-  std::tuple<int64_t, double, double, double> result;
+  std::tuple<int64_t, double, double, double, double> result;
   std::string infile = args[3];
   if (infile == "-") {
     result = fasttext.test(std::cin, k, threshold);
@@ -193,6 +193,7 @@ void test(const std::vector<std::string>& args) {
   std::cout << "P@" << k << ": " << std::get<1>(result) << std::endl;
   std::cout << "R@" << k << ": " << std::get<2>(result) << std::endl;
   std::cout << "C@" << k << ": " << std::get<3>(result) << std::endl;
+  std::cout << "F1@" << k << ": " << std::get<4>(result) << std::endl;
 }
 
 void predict(const std::vector<std::string>& args) {
