@@ -191,6 +191,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           loss = loss_name::softmax;
         } else if (args.at(ai + 1) == "plt") {
           loss = loss_name::plt;
+        } else if (args.at(ai + 1) == "sigmoid") {
+          loss = loss_name::sigmoid;
         } else {
           std::cerr << "Unknown loss: " << args.at(ai + 1) << std::endl;
           printHelp();
