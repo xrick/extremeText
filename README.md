@@ -6,7 +6,7 @@ extremeText implements:
 
 * Probabilistic Labels Tree (PLT) loss for extreme multi-Label classification with top-down hierarchical clustering (k-means) for tree building,
 * sigmoid loss for multi-label classification,
-* L2 regularization and FOBOS update for all losses,
+* L2 regularization for all losses,
 * ensemble of loss layers with bagging,
 * calculation of hidden (document) vector as a weighted average of the word vectors,
 * calculation of TF-IDF weights for words.
@@ -69,7 +69,6 @@ New losses for multi-label classification:
 With the following optional arguments:
   General:
   -l2                 L2 regularization (default = 0)
-  -fobos              use FOBOS update
   -tfidfWeights       calculate TF-IDF weights for words
   -wordsWeights       read word weights from file (format: <word>:<weights>)
   -weight             document weight prefix (default = __weight__; format: <weight prefix>:<document weight>)
@@ -98,7 +97,7 @@ $ ./extremetext get-prob <model> <input> [<th>] [<output>] [<thread>]
 
 Please cite below work if using this code for extreme classification.
 
-M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński, [*A no-regret generalization of hierarchical softmax to extreme multi-label classification*](https://arxiv.org/abs/1810.11671)
+M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński. [*A no-regret generalization of hierarchical softmax to extreme multi-label classification*](http://papers.nips.cc/paper/7872-a-no-regret-generalization-of-hierarchical-softmax-to-extreme-multi-label-classification). Advances in Neural Information Processing Systems 31, 2018.
 
 ## TODO
 * Merge with the latest changes from fastText.
