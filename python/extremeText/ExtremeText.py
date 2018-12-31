@@ -348,6 +348,7 @@ def train_supervised(
     # extremeText args
     wordsWeights=False,
     tfidfWeights=False,
+    freezeVectors=False,
     arity=2,
     treeType="kmeans",
     treeStructure="",
@@ -402,6 +403,7 @@ def train_unsupervised(
     # extremeText args
     wordsWeights=False,
     tfidfWeights=False,
+    freezeVectors=False,
     arity=2,
     treeType="kmeans",
     treeStructure="",

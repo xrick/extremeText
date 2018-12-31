@@ -85,6 +85,7 @@ PYBIND11_MODULE(extremetext_pybind, m) {
       //extremeText args
       .def_readwrite("wordsWeights", &fasttext::Args::wordsWeights)
       .def_readwrite("tfidfWeights", &fasttext::Args::tfidfWeights)
+      .def_readwrite("freezeVectors", &fasttext::Args::freezeVectors)
 
       // PLT args
       .def_readwrite("arity", &fasttext::Args::arity)

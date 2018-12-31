@@ -75,6 +75,7 @@ With the following optional arguments:
   -tag                tags prefix (default = __tag__), tags are ignored words, that are outputed with prediction
   -addEosToken        add EOS token at the end of document (default = 0)
   -eosWeight          weight of EOS token (default = 1.0)
+  -freezeVectors      freeze pretrained word vectors for supervised learning
   
   PLT (Probabilistic Labels Tree):
   -treeType           type of PLT: complete, huffman, kmeans (default = kmeans)

@@ -304,11 +304,10 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
   real values_sum = computeHidden(input, input_values, hidden_);
   grad_.zero();
 
-  if (lossLayer_ != nullptr && lossLayer_->isMultilabel()){
+  if (lossLayer_ != nullptr) {
     loss_ += lossLayer_->loss(input, labels, lr, this);
-  }
-  else{
-    std::uniform_int_distribution<> uniform(0, labels.size() -1);
+  } else {
+    std::uniform_int_distribution<> uniform(0, labels.size() - 1);
     int32_t target = labels[uniform(rng)];
     assert(target >= 0);
     assert(target < osz_);
@@ -323,13 +322,15 @@ void Model::update(const std::vector<int32_t>& input, const std::vector<real>& i
   }
 
   nexamples_ += 1;
-  if (args_->model == model_name::sup) {
-    grad_.mul(1.0 / values_sum);
-    //grad_.mul(1.0 / input.size());
-  }
-  for (auto it = 0; it < input.size(); ++it){
-    wi_->addRow(grad_, input[it], input_values[it]);
-    //wi_->addRow(grad_, input[it], 1.0);
+  if (!args_->freezeVectors) {
+    if (args_->model == model_name::sup) {
+      grad_.mul(1.0 / values_sum);
+      //grad_.mul(1.0 / input.size());
+    }
+    for (auto it = 0; it < input.size(); ++it) {
+      wi_->addRow(grad_, input[it], input_values[it]);
+      //wi_->addRow(grad_, input[it], 1.0);
+    }
   }
 }
 

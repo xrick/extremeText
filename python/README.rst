@@ -170,6 +170,8 @@ Reference
 
 Please cite below work if using this package for extreme classification.
 
-M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński,
-`A no-regret generalization of hierarchical softmax to extreme
-multi-label classification <https://arxiv.org/abs/1810.11671>`__
+M. Wydmuch, K. Jasinska, M. Kuznetsov, R. Busa-Fekete, K. Dembczyński.
+`*A no-regret generalization of hierarchical softmax to extreme
+multi-label
+classification* <http://papers.nips.cc/paper/7872-a-no-regret-generalization-of-hierarchical-softmax-to-extreme-multi-label-classification>`__.
+Advances in Neural Information Processing Systems 31, 2018.
