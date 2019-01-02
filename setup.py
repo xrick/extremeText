@@ -19,7 +19,7 @@ import sys
 import setuptools
 import os
 
-__version__ = '0.8.3'
+__version__ = '0.8.4'
 EXTREMETEXT_SRC = "src"
 
 # Based on https://github.com/pybind/python_example

@@ -147,13 +147,13 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
     while (ifs.peek() != EOF) {
       utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
       dict->getLine(ifs, line, line_values, labels, tags);
-      unitNorm(line_values.data(), line_values.size() - 1); // Left bias term untouched
+      unitNorm(line_values.data(), line_values.size() - (args_->addEosToken ? 1 : 0));
       for(const auto& l : labels){
         for(int j = 0; j < line.size(); ++j){
           auto f = tmpLabelsFeatures[l].find(line[j]);
           if(f == tmpLabelsFeatures[l].end())
-            tmpLabelsFeatures[l][line[j]] = line_values[j];
-          else (*f).second += line_values[j];
+            tmpLabelsFeatures[l][line[j]] = line_values[j] / line.size();
+          else (*f).second += line_values[j] / line.size();
         }
       }
     }

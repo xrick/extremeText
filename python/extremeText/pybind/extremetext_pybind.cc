@@ -296,9 +296,6 @@ PYBIND11_MODULE(extremetext_pybind, m) {
             std::vector<std::pair<fasttext::real, std::string>> predictions;
             std::stringstream ioss(text);
             m.predict(ioss, k, predictions, threshold);
-            for (auto& pair : predictions) {
-              pair.first = std::exp(pair.first);
-            }
             return predictions;
           })
       .def(
@@ -321,7 +318,6 @@ PYBIND11_MODULE(extremetext_pybind, m) {
               all_predictions.first.push_back(std::vector<fasttext::real>());
               all_predictions.second.push_back(std::vector<std::string>());
               for (auto& pair : predictions) {
-                pair.first = std::exp(pair.first);
                 all_predictions.first[all_predictions.first.size() - 1]
                     .push_back(pair.first);
                 all_predictions.second[all_predictions.second.size() - 1]

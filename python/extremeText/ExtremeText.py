@@ -137,7 +137,7 @@ class _ExtremeText():
         else:
             text = check(text)
             pairs = self.x.predict(text, k, threshold)
-            probs, labels = zip(*pairs)
+            probs, labels = zip(*pairs) if len(pairs) else ([], [])
             return labels, np.array(probs, copy=False)
 
     def get_input_matrix(self):
