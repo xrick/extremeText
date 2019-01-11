@@ -73,7 +73,6 @@ With the following optional arguments:
   -wordsWeights       read word weights from file (format: <word>:<weights>)
   -weight             document weight prefix (default = __weight__; format: <weight prefix>:<document weight>)
   -tag                tags prefix (default = __tag__), tags are ignored words, that are outputed with prediction
-  -addEosToken        add EOS token at the end of document (default = 0)
   -eosWeight          weight of EOS token (default = 1.0)
   -freezeVectors      freeze pretrained word vectors for supervised learning
   

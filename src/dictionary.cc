@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 #include "utils.h"
+#include "sutils.h"
 
 namespace fasttext {
 
@@ -457,7 +458,7 @@ real Dictionary::getLine(std::istream& in,
     if (token == EOS) break;
   }
 
-  real values_sum = 0;
+  //real values_sum = 0;
   if(args_->tfidfWeights){
     assert(words.size() == doc_counts.size());
     int32_t nwords = words.size();
@@ -472,12 +473,17 @@ real Dictionary::getLine(std::istream& in,
       words.push_back(it.first);
       real tfidf = (static_cast<real>(it.second.first) / nwords) * std::log(static_cast<real>(ndocs_) / it.second.second);
       words_values.push_back(tfidf);
-      values_sum += tfidf;
+      //values_sum += tfidf;
     }
-  } else {
-    for(auto &it : words_values)
-      values_sum += it;
   }
+  //else {
+    //for(auto &it : words_values) values_sum += it;
+  //}
+  //for(auto &it : words_values) it /= values_sum / words.size();
+
+//  if (words_values.size() != 0)
+//    unitNorm(words_values.data(), words_values.size() - (args_->addEosToken ? 1 : 0));
+
 
   // TODO: support for wordNgrams for TF-IDF
   if(!args_->tfidfWeights && !args_->wordsWeights) {
@@ -485,9 +491,6 @@ real Dictionary::getLine(std::istream& in,
     while (words.size() != words_values.size())
       words_values.push_back(1.0);
   }
-
-  for(auto &it : words_values)
-    it /= values_sum / words.size();
 
   assert(words.size() == words_values.size());
 

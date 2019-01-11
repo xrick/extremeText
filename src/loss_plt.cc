@@ -152,8 +152,8 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
         for(int j = 0; j < line.size(); ++j){
           auto f = tmpLabelsFeatures[l].find(line[j]);
           if(f == tmpLabelsFeatures[l].end())
-            tmpLabelsFeatures[l][line[j]] = line_values[j] / line.size();
-          else (*f).second += line_values[j] / line.size();
+            tmpLabelsFeatures[l][line[j]] = line_values[j];
+          else (*f).second += line_values[j];
         }
       }
     }

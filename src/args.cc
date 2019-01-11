@@ -53,7 +53,7 @@ Args::Args() {
   // Features args
   wordsWeights = false;
   tfidfWeights = false;
-  addEosToken = false;
+  addEosToken = true;
   eosWeight = 1.0;
   weight = "__weight__";
   tag = "__tag__";
@@ -67,14 +67,14 @@ Args::Args() {
 
   // PLT args
   arity = 2;
-  treeType = tree_type_name::complete;
+  treeType = tree_type_name::kmeans;
   treeStructure = "";
   randomTree = false;
   probNorm = false;
   maxLeaves = 100;
 
   // K-means
-  kMeansEps = 0.001;
+  kMeansEps = 0.0001;
   kMeansBalanced = true;
 
   // Update args

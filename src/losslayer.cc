@@ -51,15 +51,12 @@ void LossLayer::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
 }
 
 real LossLayer::binaryLogistic(int32_t target, real label, real lr, real l2, Model *model_){
-
     real score = model_->sigmoid(model_->wo_->dotRow(model_->hidden_, shift + target));
     real diff = (label - score);
 
-    // Original update
-    /*
-    model_->grad_.addRow(*model_->wo_, shift + target, lr * diff / args_->ensemble);
-    model_->wo_->addRow(model_->hidden_, shift + target, lr * diff);
-     */
+    // Vanilla fastText update
+    //model_->grad_.addRow(*model_->wo_, shift + target, lr * diff / args_->ensemble);
+    //model_->wo_->addRow(model_->hidden_, shift + target, lr * diff);
 
     if(args_->fobos){
         model_->grad_.addRowL2Fobos(*model_->wo_, shift + target, lr, diff / args_->ensemble, l2);

@@ -169,16 +169,16 @@ inline void unitNorm(T* data, size_t size){
     T norm = 0;
     for(int f = 0; f < size; ++f) norm += data[f] * data[f];
     norm = std::sqrt(norm);
-    if(norm == 0) norm = 1;
-    for(int f = 0; f < size; ++f) data[f] /= norm;
+    if(norm == 0) return;
+    else for(int f = 0; f < size; ++f) data[f] /= norm;
 }
 
 inline void unitNorm(Feature* data, size_t size){
     real norm = 0;
     for(int f = 0; f < size; ++f) norm += data[f].value * data[f].value;
     norm = std::sqrt(norm);
-    if(norm == 0) norm = 1;
-    for(int f = 0; f < size; ++f) data[f].value /= norm;
+    if(norm == 0) return;
+    else for(int f = 0; f < size; ++f) data[f].value /= norm;
 }
 
 template <typename T>
