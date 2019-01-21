@@ -78,6 +78,7 @@ Args::Args() {
   kMeansEps = 0.0001;
   kMeansBalanced = true;
   kMeansCentThr = 0.0;
+  kMeansSample = 1.0;
 
   // Update args
   l2 = 0;

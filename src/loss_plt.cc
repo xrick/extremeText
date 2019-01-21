@@ -121,6 +121,50 @@ void PLT::buildCompletePLTree(int32_t k_) {
 
   std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
 }
+
+
+#define MUTEXES 2048
+void featureMatrixThread(int threadId, std::shared_ptr<Dictionary> dict, std::shared_ptr<Args> args,
+        std::vector<std::unordered_map<int32_t, real>>& tmpLabelsFeatures, std::array<std::mutex, MUTEXES>& mutexes){
+
+    std::ifstream ifs(args->input);
+    std::vector<int32_t> line, labels;
+    std::vector<real> line_values;
+    std::vector<std::string> tags;
+
+    int64_t insize = utils::size(ifs);
+    utils::seek(ifs, threadId * insize / args->thread);
+    int64_t startpos = ifs.tellg();
+    int64_t endpos = (threadId + 1) * insize / args->thread;
+
+    while (ifs.peek() != EOF) {
+        dict->getLine(ifs, line, line_values, labels, tags);
+        auto pos = ifs.tellg();
+        if(threadId == 0 && args->verbose > 0)
+            utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+        if(pos < startpos || pos > endpos) break;
+
+        if(args->kMeansSample < 1.0){
+            uint32_t h = utils::hash((char*)(&pos), sizeof(pos));
+            uint32_t max = 1 << 24;
+            if (args->kMeansSample < static_cast<real>(h % max) / max) continue;
+        }
+
+        unitNorm(line_values.data(), line_values.size() - (args->addEosToken ? 1 : 0));
+        for(const auto& l : labels){
+            std::mutex &m = mutexes[l % mutexes.size()];
+            m.lock();
+            for(int j = 0; j < line.size(); ++j){
+                auto f = tmpLabelsFeatures[l].find(line[j]);
+                if(f == tmpLabelsFeatures[l].end())
+                    tmpLabelsFeatures[l][line[j]] = line_values[j];
+                else (*f).second += line_values[j];
+            }
+            m.unlock();
+        }
+    }
+    ifs.close();
+}
   
 NodePartition nodeKMeansThread(NodePartition nPart, SRMatrix<Feature>& labelsFeatures, std::shared_ptr<Args> args, int seed){
   kMeans(nPart.partition, labelsFeatures, args->arity, args->kMeansEps, args->kMeansBalanced, seed);
@@ -136,28 +180,37 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   SRMatrix<Feature> labelsFeatures;
 
   {
-    std::cerr << "Computing labels' features matrix ...\n";
-    std::ifstream ifs(args_->input);
+    std::cerr << "Computing labels' features matrix in " << args->thread << " threads ...\n";
     std::vector<std::unordered_map<int32_t, real>> tmpLabelsFeatures(k);
-    std::vector<int32_t> line, labels;
-    std::vector<real> line_values;
-    std::vector<std::string> tags;
 
-    int i = 0;
-    while (ifs.peek() != EOF) {
-      utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
-      dict->getLine(ifs, line, line_values, labels, tags);
-      unitNorm(line_values.data(), line_values.size() - (args_->addEosToken ? 1 : 0));
-      for(const auto& l : labels){
-        for(int j = 0; j < line.size(); ++j){
-          auto f = tmpLabelsFeatures[l].find(line[j]);
-          if(f == tmpLabelsFeatures[l].end())
-            tmpLabelsFeatures[l][line[j]] = line_values[j];
-          else (*f).second += line_values[j];
+    if(args->thread > 1){
+      std::array<std::mutex, MUTEXES> mutexes;
+      ThreadSet tSet;
+      for(int t = 0; t < args_->thread; ++t)
+        tSet.add(featureMatrixThread, t, dict, args, std::ref(tmpLabelsFeatures), std::ref(mutexes));
+      tSet.joinAll();
+    } else {
+      std::ifstream ifs(args->input);
+      std::vector<int32_t> line, labels;
+      std::vector<real> line_values;
+      std::vector<std::string> tags;
+
+      int i = 0;
+      while (ifs.peek() != EOF) {
+        utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
+        dict->getLine(ifs, line, line_values, labels, tags);
+        unitNorm(line_values.data(), line_values.size() - (args->addEosToken ? 1 : 0));
+        for(const auto& l : labels){
+          for(int j = 0; j < line.size(); ++j){
+            auto f = tmpLabelsFeatures[l].find(line[j]);
+            if(f == tmpLabelsFeatures[l].end())
+              tmpLabelsFeatures[l][line[j]] = line_values[j];
+            else (*f).second += line_values[j];
+          }
         }
       }
+      ifs.close();
     }
-    ifs.close();
 
     uint64_t featureCount = 0;
     for(int l = 0; l < k; ++l){
@@ -176,8 +229,6 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
 
     //assert(labelsFeatures.rows() == dict->nlabels());
     //assert(labelsFeatures.cols() == dict->nwords());
-
-    std::cerr << std::endl;
   }
 
   // Prepare partitions
