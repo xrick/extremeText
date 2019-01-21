@@ -47,11 +47,12 @@ void printQuantizeUsage() {
 
 void printTestUsage() {
   std::cerr
-    << "usage: extremetext test <model> <test-data> [<k>] [<th>]\n\n"
+    << "usage: extremetext test <model> <test-data> [<k>] [<th>] [<thread>]\n\n"
     << "  <model>      model filename\n"
     << "  <test-data>  test data filename (if -, read from stdin)\n"
     << "  <k>          (optional; 1 by default) predict top k labels\n"
     << "  <th>         (optional; 0.0 by default) probability threshold\n"
+    << "  <thread>     (optional; #cpu by default) number of threads\n"
     << std::endl;
 }
 
@@ -158,19 +159,20 @@ void printSaveDocumentVectorsUsage() {
 }
 
 void test(const std::vector<std::string>& args) {
-  if (args.size() < 4 || args.size() > 6) {
+  if (args.size() < 4 || args.size() > 7) {
     printTestUsage();
     exit(EXIT_FAILURE);
   }
 
   int32_t k = 1;
   real threshold = 0.0;
-  if (args.size() > 4) {
+  int32_t thread = utils::cpuCount();
+  if (args.size() > 4)
     k = std::stoi(args[4]);
-    if (args.size() == 6) {
-      threshold = std::stof(args[5]);
-    }
-  }
+  if (args.size() > 5)
+    threshold = std::stof(args[5]);
+  if (args.size() > 6)
+    thread = std::stoi(args[6]);
 
   FastText fasttext;
   fasttext.loadModel(args[2]);
@@ -185,8 +187,9 @@ void test(const std::vector<std::string>& args) {
       std::cerr << "Test file cannot be opened!" << std::endl;
       exit(EXIT_FAILURE);
     }
-    result = fasttext.test(ifs, k, threshold);
+    if(thread == 1) result = fasttext.test(ifs, k, threshold);
     ifs.close();
+    if(thread > 1) result = fasttext.startTestThreads(infile, k, thread, threshold);
   }
   std::cout << "Number of documents: " << std::get<0>(result) << std::endl;
   std::cout << std::setprecision(5);
@@ -218,7 +221,6 @@ void predict(const std::vector<std::string>& args) {
   FastText fasttext;
   fasttext.loadModel(std::string(args[2]));
   std::string infile(args[3]);
-  (args[6]);
 
   if (infile == "-") {
     fasttext.predict(std::cin, k, print_prob, threshold);

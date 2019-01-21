@@ -66,6 +66,7 @@ class Args {
     // Features args
     bool wordsWeights;
     bool tfidfWeights;
+    real weightsThr;
     bool addEosToken;
     real eosWeight;
     std::string weight;
@@ -89,6 +90,8 @@ class Args {
     // K-means
     real kMeansEps;
     bool kMeansBalanced;
+    real kMeansCentThr;
+    real kMeansSample;
 
     // Update args
     bool fobos;

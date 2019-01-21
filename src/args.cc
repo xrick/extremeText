@@ -53,6 +53,7 @@ Args::Args() {
   // Features args
   wordsWeights = false;
   tfidfWeights = false;
+  weightsThr = 0.0;
   addEosToken = true;
   eosWeight = 1.0;
   weight = "__weight__";
@@ -76,6 +77,7 @@ Args::Args() {
   // K-means
   kMeansEps = 0.0001;
   kMeansBalanced = true;
+  kMeansCentThr = 0.0;
 
   // Update args
   l2 = 0;
@@ -235,6 +237,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       } else if (args[ai] == "-tfidfWeights") {
         tfidfWeights = true;
         ai--;
+      } else if (args[ai] == "-weightsThr") {
+        weightsThr = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-addEosToken") {
         addEosToken = true;
         ai--;
@@ -289,7 +293,15 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           exit(EXIT_FAILURE);
         }
 
-      // Bagging args
+      // K-means args
+      } else if (args[ai] == "-kMeansEps") {
+        kMeansEps = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-kMeansCentThr") {
+        kMeansCentThr = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-kMeansSample") {
+        kMeansSample = std::stof(args.at(ai + 1));
+
+      // Ensamble args
       } else if (args[ai] == "-bagging") {
         bagging = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-ensemble") {
@@ -349,7 +361,8 @@ void Args::printDictionaryHelp() {
     << "  -weight             document weight prefix [" << weight << "]\n"
     << "  -tag                tags prefix [" <<  tag << "]\n"
     << "  -tfidfWeights       calculate TF-IDF weights for words\n"
-    << "  -wordsWeights       read words weights from file (format: <word>:<weights>)\n";
+    << "  -wordsWeights       read words weights from file (format: <word>:<weights>)\n"
+    << "  -weightsThr         threshold value for words weights\n";
 }
 
 void Args::printTrainingHelp() {
@@ -372,6 +385,7 @@ void Args::printTrainingHelp() {
     << "  -arity              arity of PLT [" << arity << "]\n"
     << "  -maxLeaves          maximum number of leaves (labels) in one internal node of PLT [" << maxLeaves <<"]\n"
     << "  -kMeansEps          stopping criteria for k-means clustering [" << kMeansEps << "]\n"
+    << "  -kMeansCentThr      threshold value for label centroids\n"
     << "  -ensemble           size of the ensemble [" << ensemble << "]\n"
     << "  -bagging            bagging ratio [" << bagging << "]\n"
     << "  -addEosToken        add EOS token at the end of document [" << boolToString(addEosToken) << "]\n"
@@ -391,13 +405,13 @@ void Args::printQuantizationHelp() {
 void Args::printInfo(){
   std::cerr << "  Model: " << modelToString(model) << ", loss: " << lossToString(loss) << "\n  Features: ";
   if(model == model_name::sup){
-      if(tfidfWeights) std::cerr << "TF-IDF weights";
-      else if(wordsWeights) std::cerr << "words weights";
+      if(tfidfWeights) std::cerr << "TF-IDF weights, weightsThr: " << weightsThr;
+      else if(wordsWeights) std::cerr << "words weights, weightsThr: " << weightsThr;
       else std::cerr << "BOW";
   }
   std::cerr << ", buckets: " << bucket << std::endl;
   if(loss == loss_name::plt) std::cerr << "  Tree type: " << treeTypeToString(treeType) << ", arity: " << arity << ", maxLeaves: " << maxLeaves;
-  if(loss == loss_name::plt && treeType == tree_type_name::kmeans) std::cerr << ", kMeansEps: " << kMeansEps << std::endl;
+  if(loss == loss_name::plt && treeType == tree_type_name::kmeans) std::cerr << ", kMeansEps: " << kMeansEps << ", kMeansCentThr: " << kMeansCentThr << std::endl;
   else std::cerr << std::endl;
   if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << std::endl; //", bagging ratio: " << bagging << std::endl;
   std::cerr << "  Update: ";

@@ -430,6 +430,99 @@ void FastText::skipgram(Model& model, real lr,
   }
 }
 
+std::tuple<uint64_t, double, double, double> FastText::startTestThreads(
+        std::string infile,
+        int32_t k,
+        int32_t thread,
+        real threshold) {
+
+  if (args_->verbose > 0) {
+    std::cerr << "Test in " << thread << " threads ...\n";
+    args_->printInfo();
+  }
+
+  TestThreadResult testResults;
+  testResults.nexamples = 0;
+  testResults.precision = 0;
+  testResults.npredictions = 0;
+  testResults.nlabels = 0;
+  TestThreadResult* testResultPtr = &testResults;
+
+  std::vector<std::thread> threads;
+  std::mutex testMutex;
+  std::mutex* testMutexPtr = &testMutex;
+  for (int32_t i = 0; i < thread; i++)
+    threads.push_back(std::thread([=]() { testThread(i, thread, infile, k, threshold, testResultPtr, testMutexPtr); }));
+    //threads.push_back(std::thread([=]() { testThread(i, thread, infile, k, threshold, &testResults, &testMutex); }));
+  for (int32_t i = 0; i < thread; i++) threads[i].join();
+
+  return std::tuple<uint64_t, double, double, double>(
+          testResults.nexamples, testResults.precision / testResults.npredictions,
+          testResults.precision / testResults.nlabels, static_cast<double>(testResults.coverage.size()) / dict_->nlabels());
+}
+
+void FastText::testThread(
+        int32_t threadId,
+        int32_t thread,
+        std::string infile,
+        int32_t k,
+        real threshold,
+        TestThreadResult* testResults,
+        std::mutex* testMutex) {
+
+  std::ifstream ifs(infile);
+  int64_t insize = utils::size(ifs);
+  utils::seek(ifs, threadId * insize / thread);
+  int64_t startpos = ifs.tellg();
+  int64_t endpos = (threadId + 1) * insize / thread;
+
+  uint64_t nexamples = 0, nlabels = 0, npredictions = 0;
+  double precision = 0.0;
+  std::unordered_set<int32_t> coverage;
+
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
+  std::vector<std::string> tags;
+
+  std::vector<std::pair<real,int32_t>> modelPredictions;
+  Vector hidden(args_->dim);
+  Vector output(dict_->nlabels());
+
+  while (ifs.peek() != EOF) {
+    dict_->getLine(ifs, line, line_values, labels, tags);
+    auto pos = ifs.tellg();
+    if(threadId == 0 && args_->verbose > 0)
+      utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+    if(pos < startpos || pos > endpos) break;
+
+    if (labels.size() > 0 && line.size() > 0) {
+      modelPredictions.clear();
+      model_->computeHidden(line, line_values, hidden);
+      model_->predict(k, threshold, modelPredictions, hidden, output);
+
+      for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
+        if (std::find(labels.begin(), labels.end(), it->second) != labels.end()) {
+          precision += 1.0;
+          coverage.insert(it->second);
+        }
+      }
+      nexamples++;
+      nlabels += labels.size();
+      npredictions += modelPredictions.size();
+    }
+  }
+
+  ifs.close();
+
+  testMutex->lock();
+  testResults->nexamples += nexamples;
+  testResults->precision += precision;
+  testResults->npredictions += npredictions;
+  testResults->nlabels += nlabels;
+  for(auto& l : coverage) testResults->coverage.insert(l);
+  testMutex->unlock();
+}
+
 std::tuple<uint64_t, double, double, double> FastText::test(
     std::istream& in,
     int32_t k,
@@ -440,7 +533,7 @@ std::tuple<uint64_t, double, double, double> FastText::test(
     args_->printInfo();
   }
 
-  int32_t nexamples = 0, nlabels = 0, npredictions = 0;
+  uint64_t nexamples = 0, nlabels = 0, npredictions = 0;
   double precision = 0.0;
   std::unordered_set<int32_t> coverage;
   std::vector<int32_t> line, labels;
@@ -473,8 +566,12 @@ void FastText::startPredictThreads(
   int32_t k,
   bool print_prob,
   real threshold){
-  std::cerr << "Starting predict command in " << thread << " threads ...\n"
-    << "  K: " << k << ", threshold: " << threshold << std::endl;
+
+  if (args_->verbose > 0) {
+  std::cerr << "Predict in " << thread << " threads ...\n"
+            << "  K: " << k << ", threshold: " << threshold << std::endl;
+    args_->printInfo();
+  }
 
   std::vector<std::thread> threads;
   for (int32_t i = 0; i < thread; i++)
@@ -498,8 +595,8 @@ void FastText::predictThread(
   int64_t startpos = ifs.tellg();
   int64_t endpos = (threadId + 1) * insize / thread;
 
-  std::vector<int32_t> words, labels;
-  std::vector<real> words_values;
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
   std::vector<std::string> tags;
 
   std::vector<std::pair<real,int32_t>> modelPredictions;
@@ -507,13 +604,16 @@ void FastText::predictThread(
   Vector output(dict_->nlabels());
 
   while (ifs.peek() != EOF) {
-    dict_->getLine(ifs, words, words_values, labels, tags);
-    if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
+    dict_->getLine(ifs, line, line_values, labels, tags);
+    auto pos = ifs.tellg();
+    if(threadId == 0 && args_->verbose > 0)
+      utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+    if(pos < startpos || pos > endpos) break;
 
     modelPredictions.clear();
-    if (words.empty()) continue;
+    if (line.empty()) continue;
 
-    model_->computeHidden(words, words_values, hidden);
+    model_->computeHidden(line, line_values, hidden);
     model_->predict(k, threshold, modelPredictions, hidden, output);
 
     for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
@@ -537,17 +637,17 @@ void FastText::predict(
   std::vector<std::pair<real,std::string>>& predictions,
   real threshold
 ) const {
-  std::vector<int32_t> words, labels;
-  std::vector<real> words_values;
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
   std::vector<std::string> tags;
-  dict_->getLine(in, words, words_values, labels, tags);
+  dict_->getLine(in, line, line_values, labels, tags);
 
   predictions.clear();
-  if (words.empty()) return;
+  if (line.empty()) return;
   Vector hidden(args_->dim);
   Vector output(dict_->nlabels());
   std::vector<std::pair<real,int32_t>> modelPredictions;
-  model_->predict(words, words_values, k, threshold, modelPredictions, hidden, output);
+  model_->predict(line, line_values, k, threshold, modelPredictions, hidden, output);
   for (auto it = modelPredictions.cbegin(); it != modelPredictions.cend(); it++) {
     predictions.push_back(std::make_pair(it->first, dict_->getLabel(it->second)));
   }
@@ -559,6 +659,12 @@ void FastText::predict(
   bool print_prob,
   real threshold
 ) {
+
+  if (args_->verbose > 0) {
+    std::cerr << "Predict ...\n" << "  k: " << k << ", threshold: " << threshold << std::endl;
+    args_->printInfo();
+  }
+
   std::vector<std::pair<real,std::string>> predictions;
   while (in.peek() != EOF) {
     predictions.clear();
@@ -595,6 +701,20 @@ void FastText::outputProb(std::ostream& ofs, Vector& hidden, std::vector<int32_t
   ofs << std::endl;
 }
 
+void FastText::startGetProbThreads(std::string infile, std::string outfile, int32_t thread, real threshold){
+  if (args_->verbose > 0) {
+    std::cerr << "Getting probabilities " << args_->thread << " threads ...\n"
+              << "  Threshold: " << threshold << std::endl;
+    args_->printInfo();
+  }
+
+  std::vector<std::thread> threads;
+  for (int32_t i = 0; i < thread; i++)
+    threads.push_back(std::thread([=]() { getProbThread(i, thread, infile, outfile, threshold); }));
+  for (int32_t i = 0; i < thread; i++)
+    threads[i].join();
+}
+
 void FastText::getProbThread(int32_t threadId, int32_t thread, std::string infile, std::string outfile, real threshold) {
   std::ifstream ifs(infile);
   std::ofstream ofs(outfile + "." + utils::itos(threadId, 3));
@@ -604,15 +724,15 @@ void FastText::getProbThread(int32_t threadId, int32_t thread, std::string infil
   int64_t startpos = ifs.tellg();
   int64_t endpos = (threadId + 1) * insize / thread;
 
-  std::vector<int32_t> words, labels;
-  std::vector<real> words_values;
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
   std::vector<std::string> tags;
   Vector hidden(args_->dim);
   while (ifs.peek() != EOF) {
-    dict_->getLine(ifs, words, words_values, labels, tags);
+    dict_->getLine(ifs, line, line_values, labels, tags);
     if(ifs.tellg() < startpos || ifs.tellg() > endpos) break;
 
-    model_->computeHidden(words, words_values, hidden);
+    model_->computeHidden(line, line_values, hidden);
     outputProb(ofs, hidden, labels, tags, threshold);
   }
 
@@ -620,25 +740,20 @@ void FastText::getProbThread(int32_t threadId, int32_t thread, std::string infil
   ofs.close();
 }
 
-void FastText::startGetProbThreads(std::string infile, std::string outfile, int32_t thread, real threshold){
-  std::cerr << "Starting get-preb command in " << args_->thread << " threads ...\n"
-    << "  Threshold: " << threshold << std::endl;
-
-  std::vector<std::thread> threads;
-  for (int32_t i = 0; i < thread; i++)
-    threads.push_back(std::thread([=]() { getProbThread(i, thread, infile, outfile, threshold); }));
-  for (int32_t i = 0; i < thread; i++)
-    threads[i].join();
-}
-
 void FastText::getProb(std::istream& in, real threshold) {
-  std::vector<int32_t> words, labels;
-  std::vector<real> words_values;
+  if (args_->verbose > 0) {
+    std::cerr << "Getting probabilities ...\n"
+              << "  Threshold: " << threshold << std::endl;
+    args_->printInfo();
+  }
+
+  std::vector<int32_t> line, labels;
+  std::vector<real> line_values;
   std::vector<std::string> tags;
   Vector hidden(args_->dim);
   while (in.peek() != EOF) {
-    dict_->getLine(in, words, words_values, labels, tags);
-    model_->computeHidden(words, words_values, hidden);
+    dict_->getLine(in, line, line_values, labels, tags);
+    model_->computeHidden(line, line_values, hidden);
     outputProb(std::cout, hidden, labels, tags, threshold);
   }
 }

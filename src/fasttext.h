@@ -19,6 +19,7 @@
 #include <iostream>
 #include <queue>
 #include <tuple>
+#include <mutex>
 
 #include "args.h"
 #include "dictionary.h"
@@ -31,6 +32,12 @@
 #include "losslayer.h"
 
 namespace fasttext {
+
+struct TestThreadResult{
+    uint64_t nexamples, nlabels, npredictions;
+    double precision;
+    std::unordered_set<int32_t> coverage;
+};
 
 class FastText {
  protected:
@@ -99,9 +106,14 @@ class FastText {
   std::vector<int32_t> selectEmbeddings(int32_t) const;
   void getSentenceVector(std::istream&, Vector&);
   void quantize(const Args);
+
+  // Test command
+  //void testThread(int32_t, int32_t, std::string, int32_t, real, TestThreadResult*, std::mutex*);
+  void testThread(int32_t, int32_t, std::string, int32_t, real, TestThreadResult*, std::mutex*);
+  std::tuple<uint64_t, double, double, double> startTestThreads(std::string, int32_t, int32_t, real = 0.0);
   std::tuple<uint64_t, double, double, double> test(std::istream&, int32_t, real = 0.0);
 
-  // Predict and test commands
+  // Predict commands
   void startPredictThreads(std::string, std::string, int32_t, int32_t, bool, real);
   void predictThread(int32_t, int32_t, std::string, std::string, int32_t, bool, real);
   void predict(std::istream&, int32_t, bool, real = 0.0);

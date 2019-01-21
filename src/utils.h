@@ -31,7 +31,10 @@ namespace utils {
   size_t cpuCount();
   std::string itos(int32_t, int32_t = 0);
   void printProgress(float progress, std::ostream& log_stream);
-  uint32_t hash(const std::string& str);
+
+  uint32_t hash(const char*, size_t size);
+  inline uint32_t hash(const std::string& str){ return hash(str.data(), str.length()); };
+
   void loadString(std::istream& in, std::string& str);
   void saveString(std::ostream& out, std::string& str);
 

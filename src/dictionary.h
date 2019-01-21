@@ -102,8 +102,8 @@ class Dictionary {
         const std::string&,
         std::vector<int32_t>&,
         std::vector<std::string>&) const;
-    int32_t add(const std::string&);
-    void add(const std::string&, std::unordered_set<int32_t>&);
+    int32_t add(const std::string&, int32_t = 1);
+    void add(const std::string&, int32_t, std::unordered_set<int32_t>&);
     bool readWord(std::istream&, std::string&) const;
     bool readWord(std::istream&, std::string&, real&) const;
     void readFromFile(std::istream&);

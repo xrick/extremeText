@@ -29,10 +29,10 @@ const std::string Dictionary::EOW = ">";
 
 Dictionary::Dictionary(std::shared_ptr<Args> args) : args_(args),
   word2int_(MAX_VOCAB_SIZE, -1), size_(0), nwords_(0), nlabels_(0),
-  ntokens_(0), pruneidx_size_(-1) {}
+  ntokens_(0), ndocs_(0), pruneidx_size_(-1) {}
 
 Dictionary::Dictionary(std::shared_ptr<Args> args, std::istream& in) : args_(args),
-  size_(0), nwords_(0), nlabels_(0), ntokens_(0), pruneidx_size_(-1) {
+  size_(0), nwords_(0), nlabels_(0), ntokens_(0), ndocs_(0), pruneidx_size_(-1) {
   load(in);
 }
 
@@ -49,26 +49,28 @@ int32_t Dictionary::find(const std::string& w, uint32_t h) const {
   return id;
 }
 
-int32_t Dictionary::add(const std::string& w) {
+int32_t Dictionary::add(const std::string& w, int32_t c) {
   int32_t h = find(w);
   ntokens_++;
   if (word2int_[h] == -1) {
     entry e;
     e.word = w;
-    e.count = 1;
+    //e.count = 1;
+    e.count = c;
     e.doc_count = 0;
     e.type = getType(w);
     words_.push_back(e);
     word2int_[h] = size_++;
   } else {
-    words_[word2int_[h]].count++;
+    //words_[word2int_[h]].count++;
+    words_[word2int_[h]].count += c;
   }
 
   return h;
 }
 
-void Dictionary::add(const std::string& w, std::unordered_set<int32_t>& uniqWords) {
-  int32_t h = add(w);
+void Dictionary::add(const std::string& w, int32_t c, std::unordered_set<int32_t>& uniqWords) {
+  int32_t h = add(w, c);
   if(!uniqWords.count(h)){
     words_[word2int_[h]].doc_count++;
     uniqWords.insert(h);
@@ -253,12 +255,13 @@ void Dictionary::readFromFile(std::istream& in) {
   std::string word;
   real value;
   int64_t minThreshold = 1;
-  std::unordered_set<int32_t> uniqWords;
+  std::unordered_set<int32_t> uniqWords; // For TF-IDF
   while (readWord(in, word, value)) {
     if(word == args_->weight || word.find(args_->tag) == 0){
       continue;
     }
-    add(word, uniqWords);
+    if(args_->tfidfWeights) add(word, static_cast<int32_t>(value), uniqWords);
+    else add(word, static_cast<int32_t>(value));
     if(word == EOS) {
       uniqWords.clear();
       ++ndocs_;
@@ -464,8 +467,11 @@ real Dictionary::getLine(std::istream& in,
     int32_t nwords = words.size();
     std::unordered_map<int32_t, std::pair<int32_t, int32_t>> counts;
     for(size_t i = 0; i < words.size(); ++i){
-      counts[words[i]].first++;
-      counts[words[i]].second = doc_counts[i];
+      auto word_count = counts.find(words[i]);
+      if(word_count == counts.end()) counts[words[i]] = std::pair<int32_t, int32_t>(static_cast<int32_t>(words_values[i]), doc_counts[i]);
+      else word_count->second.first += words_values[i];
+      //counts[words[i]].first +=
+      //counts[words[i]].second = doc_counts[i];
     }
 
     words.clear();
@@ -490,6 +496,21 @@ real Dictionary::getLine(std::istream& in,
     addWordNgrams(words, word_hashes, args_->wordNgrams);
     while (words.size() != words_values.size())
       words_values.push_back(1.0);
+  }
+
+  // Filter out weights below weightsThr;
+  if(args_->weightsThr > 0){
+    size_t r = 0, w = 0, s = words_values.size();
+    while(r < s) {
+      if (words_values[r] >= args_->weightsThr) {
+        words[w] = words[r];
+        words_values[w] = words_values[r];
+        ++w;
+      }
+      ++r;
+    }
+    words.resize(w);
+    words_values.resize(w);
   }
 
   assert(words.size() == words_values.size());

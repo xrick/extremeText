@@ -159,6 +159,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
     }
     ifs.close();
 
+    uint64_t featureCount = 0;
     for(int l = 0; l < k; ++l){
       utils::printProgress(static_cast<float>(l)/k, std::cerr);
       std::vector<Feature> labelFeatures;
@@ -166,8 +167,12 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
         labelFeatures.push_back({f.first, f.second});
       std::sort(labelFeatures.begin(), labelFeatures.end());
       unitNorm(labelFeatures);
+      featureCount += labelFeatures.size();
       labelsFeatures.appendRow(labelFeatures);
     }
+
+    std::cerr << "  Features matrix: " << featureCount << " ("
+              << featureCount * sizeof(int) * sizeof(real) / 1024 / 1024 << "M)\n";
 
     //assert(labelsFeatures.rows() == dict->nlabels());
     //assert(labelsFeatures.cols() == dict->nwords());
