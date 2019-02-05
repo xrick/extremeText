@@ -15,6 +15,7 @@
 #include <random>
 #include <climits>
 #include <iomanip>
+#include <array>
 
 #include "loss_plt.h"
 #include "model.h"
