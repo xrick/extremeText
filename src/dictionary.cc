@@ -51,7 +51,7 @@ int32_t Dictionary::find(const std::string& w, uint32_t h) const {
 
 int32_t Dictionary::add(const std::string& w, int32_t c) {
   int32_t h = find(w);
-  ntokens_++;
+  ntokens_ += c;
   if (word2int_[h] == -1) {
     entry e;
     e.word = w;

@@ -329,6 +329,9 @@ void Args::parseArgs(const std::vector<std::string>& args) {
   if (wordsWeights) {
     tfidfWeights = false;
   }
+  if(treeStructure.length()){
+    treeType = tree_type_name::custom;
+  }
 }
 
 void Args::printHelp() {
@@ -411,9 +414,12 @@ void Args::printInfo(){
       else std::cerr << "BOW";
   }
   std::cerr << ", buckets: " << bucket << std::endl;
-  if(loss == loss_name::plt) std::cerr << "  Tree type: " << treeTypeToString(treeType) << ", arity: " << arity << ", maxLeaves: " << maxLeaves;
-  if(loss == loss_name::plt && treeType == tree_type_name::kmeans) std::cerr << ", kMeansEps: " << kMeansEps << ", kMeansCentThr: " << kMeansCentThr << std::endl;
-  else std::cerr << std::endl;
+  if(loss == loss_name::plt){
+    std::cerr << "  Tree type: " << treeTypeToString(treeType);
+    if(treeType != tree_type_name::custom) std::cerr << ", arity: " << arity << ", maxLeaves: " << maxLeaves;
+    if(treeType == tree_type_name::kmeans) std::cerr << ", kMeansEps: " << kMeansEps << ", kMeansCentThr: " << kMeansCentThr;
+    std::cerr << std::endl;
+  }
   if(ensemble > 1) std::cerr << "  Ensemble: " << ensemble << std::endl; //", bagging ratio: " << bagging << std::endl;
   std::cerr << "  Update: ";
   if(fobos) std::cerr << "FOBOS";

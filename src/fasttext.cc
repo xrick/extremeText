@@ -430,14 +430,15 @@ void FastText::skipgram(Model& model, real lr,
   }
 }
 
-std::tuple<uint64_t, double, double, double> FastText::startTestThreads(
+std::tuple<uint64_t, double, double, double> FastText::testInThreads(
         std::string infile,
         int32_t k,
         int32_t thread,
         real threshold) {
 
   if (args_->verbose > 0) {
-    std::cerr << "Test in " << thread << " threads ...\n";
+    std::cerr << "Test in " << thread << " threads ...\n"
+              << "  K: " << k << ", threshold: " << threshold << std::endl;
     args_->printInfo();
   }
 
@@ -491,8 +492,7 @@ void FastText::testThread(
   while (ifs.peek() != EOF) {
     dict_->getLine(ifs, line, line_values, labels, tags);
     auto pos = ifs.tellg();
-    if(threadId == 0 && args_->verbose > 0)
-      utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+    if(threadId == 0 && args_->verbose > 0) utils::printProgress(startpos, pos, endpos, std::cerr);
     if(pos < startpos || pos > endpos) break;
 
     if (labels.size() > 0 && line.size() > 0) {
@@ -529,7 +529,7 @@ std::tuple<uint64_t, double, double, double> FastText::test(
     real threshold) {
 
   if (args_->verbose > 0) {
-    std::cerr << "Test ...\n";
+    std::cerr << "Test ...\n" << "  K: " << k << ", threshold: " << threshold << std::endl;
     args_->printInfo();
   }
 
@@ -559,7 +559,7 @@ std::tuple<uint64_t, double, double, double> FastText::test(
       nexamples, precision / npredictions, precision / nlabels, static_cast<double>(coverage.size())/ dict_->nlabels());
 }
 
-void FastText::startPredictThreads(
+void FastText::predictInThreads(
   std::string infile,
   std::string outfile,
   int32_t thread,
@@ -606,8 +606,7 @@ void FastText::predictThread(
   while (ifs.peek() != EOF) {
     dict_->getLine(ifs, line, line_values, labels, tags);
     auto pos = ifs.tellg();
-    if(threadId == 0 && args_->verbose > 0)
-      utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+    if(threadId == 0 && args_->verbose > 0) utils::printProgress(startpos, pos, endpos, std::cerr);
     if(pos < startpos || pos > endpos) break;
 
     modelPredictions.clear();
@@ -701,7 +700,7 @@ void FastText::outputProb(std::ostream& ofs, Vector& hidden, std::vector<int32_t
   ofs << std::endl;
 }
 
-void FastText::startGetProbThreads(std::string infile, std::string outfile, int32_t thread, real threshold){
+void FastText::getProbInThreads(std::string infile, std::string outfile, int32_t thread, real threshold){
   if (args_->verbose > 0) {
     std::cerr << "Getting probabilities " << args_->thread << " threads ...\n"
               << "  Threshold: " << threshold << std::endl;

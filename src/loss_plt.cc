@@ -140,8 +140,7 @@ void featureMatrixThread(int threadId, std::shared_ptr<Dictionary> dict, std::sh
     while (ifs.peek() != EOF) {
         dict->getLine(ifs, line, line_values, labels, tags);
         auto pos = ifs.tellg();
-        if(threadId == 0 && args->verbose > 0)
-            utils::printProgress((static_cast<float>(pos) - startpos)/(endpos - startpos), std::cerr);
+        if(threadId == 0 && args->verbose > 0) utils::printProgress(startpos, pos, endpos, std::cerr);
         if(pos < startpos || pos > endpos) break;
 
         if(args->kMeansSample < 1.0){
@@ -197,7 +196,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
 
       int i = 0;
       while (ifs.peek() != EOF) {
-        utils::printProgress(static_cast<float>(i++)/dict->ndocs(), std::cerr);
+        utils::printProgress(0, i++, dict->ndocs(), std::cerr);
         dict->getLine(ifs, line, line_values, labels, tags);
         unitNorm(line_values.data(), line_values.size() - (args->addEosToken ? 1 : 0));
         for(const auto& l : labels){
@@ -214,7 +213,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
 
     uint64_t featureCount = 0;
     for(int l = 0; l < k; ++l){
-      utils::printProgress(static_cast<float>(l)/k, std::cerr);
+      utils::printProgress(0, l, k, std::cerr);
       std::vector<Feature> labelFeatures;
       for(const auto& f : tmpLabelsFeatures[l])
         labelFeatures.push_back({f.first, f.second});
@@ -246,7 +245,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   std::cerr << "Starting hierarchical K-Means clustering in " << args->thread << " threads ...\n";
 
   for(int r = 0; r < results.size(); ++r) {
-    utils::printProgress(static_cast<float>(r)/results.size(), std::cerr);
+    utils::printProgress(0, r, results.size(), std::cerr);
 
     // Enqueuing new clustering tasks in the main thread ensures determinism
     NodePartition nPart = results[r].get();
@@ -283,40 +282,64 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
 }
 
-void PLT::loadTreeStructure(std::string filename){
+void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> dict){
     if(args_->verbose > 2)
-      std::cerr << "  Loading PLT structure from file ...\n";
+      std::cerr << "  Loading PLT structure from file: " << filename << " ...\n";
     std::ifstream treefile(filename);
 
-    treefile >> k >> t;
+    int32_t parent, child;
+    std::string line, label;
+    {
+      std::getline(treefile, line);
+      std::istringstream lineISS(line);
+      lineISS >> t >> k;
+    }
 
-    for (auto i = 0; i < t; ++i) NodePLT *n = createNode();
+    std::unordered_map<int32_t, int32_t> nodesMap;
+    for (int32_t i = 0; i < t; ++i) NodePLT *n = createNode();
+    nodesMap.insert({0, 0});
+
+    // Node with id 0 is assumed to be a root node
     tree_root = tree[0];
 
-    for (auto i = 0; i < t - 1; ++i) {
-      int parent, child, label;
-      treefile >> parent >> child >> label;
+    while(std::getline(treefile, line)){
+      std::istringstream lineISS(line);
+      lineISS >> parent >> child >> label;
 
+      auto c = nodesMap.find(child);
+      if(c != nodesMap.end()) child = c->second;
+      else child = nodesMap.insert(std::make_pair(child, nodesMap.size())).first->second;
+
+      // Set the new root
       if(parent == -1){
         tree_root = tree[child];
-        --i;
         continue;
       }
+
+      auto p = nodesMap.find(parent);
+      if(p != nodesMap.end()) parent = p->second;
+      else parent = nodesMap.insert(std::make_pair(parent, nodesMap.size())).first->second;
 
       NodePLT *parentN = tree[parent];
       NodePLT *childN = tree[child];
       parentN->children.push_back(childN);
       childN->parent = parentN;
 
-      if(label >= 0){
-        childN->label = label;
-        tree_leaves.insert(std::make_pair(childN->label, childN));
+      if(label.length()){
+        dict->add(label, 0);
+        int32_t wid = dict->getId(label);
+
+        if(wid >= 0 && dict->getType(wid) == entry_type::label){
+          int32_t label_id = wid - dict->nwords();
+          childN->label = label_id;
+          tree_leaves.insert(std::make_pair(childN->label, childN));
+        }
       }
     }
     treefile.close();
 
     if(args_->verbose > 2)
-      std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+      std::cerr << "    Nodes: " << tree.size() << ", labels: " << tree_leaves.size() << "\n";
     assert(tree.size() == t);
     assert(tree_leaves.size() == k);
   }
@@ -436,12 +459,13 @@ NodeProb PLT::getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, s
         n_queue.pop();
 
         if(!args_->probNorm) {
-            if (np.node->label < 0) {
+            if (np.node->children.size()){
                 for (auto& child : np.node->children)
                     n_queue.push({child, np.prob * predictNode(child, hidden, model_)});
-            } else return np;
+            }
+            if (np.node->label >= 0) return np;
         } else {
-            if (np.node->label < 0) {
+            if (np.node->children.size()){
                 real sumOfP = 0.0;
                 std::vector<NodeProb> normChildren;
                 for (auto& child : np.node->children) {
@@ -458,7 +482,8 @@ NodeProb PLT::getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, s
                     child.prob *= np.prob;
                     n_queue.push(child);
                 }
-            } else return np;
+            }
+            if (np.node->label >= 0) return np;
         }
 
         if(n_queue.empty()) return np;
@@ -529,7 +554,7 @@ void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
 
   if(args_->treeStructure != ""){
     args_->treeType = tree_type_name::custom;
-    loadTreeStructure(args_->treeStructure);
+    loadTreeStructure(args_->treeStructure, dict);
     return;
   }
 
