@@ -49,11 +49,9 @@ class Dictionary {
     void addSubwords(std::vector<int32_t>&,
                      const std::string&,
                      std::vector<real>&,
-                     const real&, int32_t) const;
-    void addSubwordsTfIdf(std::vector<int32_t>& line,
-                          const std::string&,
-                          std::vector<int32_t>&,
-                          int32_t) const;
+                     const real,
+                     std::vector<int32_t>&,
+                     int32_t) const;
 
     std::shared_ptr<Args> args_;
     std::vector<int32_t> word2int_;

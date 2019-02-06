@@ -148,6 +148,7 @@ void Args::parseArgs(const std::vector<std::string>& args) {
     minn = 0;
     maxn = 0;
     lr = 0.1;
+    addEosToken = false;
   } else if (command == "cbow") {
     model = model_name::cbow;
   }
