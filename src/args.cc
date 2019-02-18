@@ -82,6 +82,7 @@ Args::Args() {
 
   // Update args
   l2 = 0;
+  lrDecay = 1.0; // linear;
   fobos = false;
 
   // Ensemble args
@@ -272,11 +273,6 @@ void Args::parseArgs(const std::vector<std::string>& args) {
       // PLT args
       } else if (args[ai] == "-arity") {
         arity = std::stoi(args.at(ai + 1));
-      } else if (args[ai] == "-l2") {
-        l2 = std::stof(args.at(ai + 1));
-      } else if (args[ai] == "-fobos") {
-        fobos = true;
-        ai--;
       } else if (args[ai] == "-treeStructure") {
         treeStructure = std::string(args.at(ai + 1));
       } else if (args[ai] == "-randomTree") {
@@ -302,6 +298,14 @@ void Args::parseArgs(const std::vector<std::string>& args) {
         kMeansCentThr = std::stof(args.at(ai + 1));
       } else if (args[ai] == "-kMeansSample") {
         kMeansSample = std::stof(args.at(ai + 1));
+
+      } else if (args[ai] == "-l2") {
+        l2 = std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-lrDecay") {
+        lrDecay= std::stof(args.at(ai + 1));
+      } else if (args[ai] == "-fobos") {
+        fobos = true;
+        ai--;
 
       // Ensamble args
       } else if (args[ai] == "-bagging") {
@@ -425,7 +429,7 @@ void Args::printInfo(){
   std::cerr << "  Update: ";
   if(fobos) std::cerr << "FOBOS";
   else std::cerr << "SGD";
-  std::cerr << ", lr: " << lr << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch << ", neg: " << neg << std::endl;
+  std::cerr << ", lr: " << lr << ", lrDecay: " << lrDecay << ", L2: " << l2 << ", dims: " << dim << ", epochs: " << epoch << ", neg: " << neg << std::endl;
 }
 
 void Args::save(std::ostream& out) {

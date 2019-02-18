@@ -96,6 +96,7 @@ class Args {
     // Update args
     bool fobos;
     real l2;
+    real lrDecay;
 
     // Ensemble args
     int ensemble;
