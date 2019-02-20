@@ -82,7 +82,7 @@ Args::Args() {
 
   // Update args
   l2 = 0;
-  lrDecay = 1.0; // linear;
+  lrDecay = 1.0; // linear decay;
   fobos = false;
 
   // Ensemble args
@@ -379,6 +379,7 @@ void Args::printTrainingHelp() {
     << "\nThe following arguments for training are optional:\n"
     << "  -lr                 learning rate [" << lr << "]\n"
     << "  -lrUpdateRate       change the rate of updates for the learning rate [" << lrUpdateRate << "]\n"
+    << "  -lrDecay            learning rate decay parameter [" << lrDecay << "]\n"
     << "  -l2                 L2 regularization [" << l2 << "]\n"
     << "  -fobos              use FOBOS update [" << boolToString(fobos) << "]\n"
     << "  -dim                size of word vectors [" << dim << "]\n"

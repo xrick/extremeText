@@ -308,7 +308,9 @@ void FastText::loadModel(std::istream& in) {
 void FastText::printInfo(real progress, real loss, std::ostream& log_stream) {
   // clock_t might also only be 32bits wide on some systems
   double t = double(clock() - start_) / double(CLOCKS_PER_SEC);
-  double lr = args_->lr * (1.0 - std::pow(progress, args_->lrDecay));
+  double lr = args_->lr * (args_->lrDecay != 1.0
+                           ? std::pow((1.0 - std::pow(progress, args_->lrDecay)), 1.0/args_->lrDecay)
+                           : 1.0 - progress);
   double wst = 0;
   int64_t eta = 720 * 3600; // Default to one month
   if (progress > 0 && t >= 0) {
@@ -908,7 +910,9 @@ void FastText::trainThread(int32_t threadId) {
 
   while (tokenCount_ < args_->epoch * ntokens) {
     real progress = real(tokenCount_) / (args_->epoch * ntokens);
-    real lr = args_->lr * (1.0 - std::pow(progress, args_->lrDecay));
+    real lr = args_->lr * (args_->lrDecay != 1.0
+            ? std::pow((1.0 - std::pow(progress, args_->lrDecay)), 1.0/args_->lrDecay)
+            : 1.0 - progress);
     if (args_->model == model_name::sup) {
       weight = dict_->getLine(ifs, line, line_values, labels, tags);
       localTokenCount += line.size() + labels.size();

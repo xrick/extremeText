@@ -303,9 +303,7 @@ void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> di
 
     std::istringstream lineISS(line);
     lineISS >> parent >> child >> label;
-
-    std::cout << parent << " " << child << " " << label << "\n";
-
+    
     if(parent == child)
       throw std::invalid_argument("Node " + child + " can't have itself as a parent!");
 
