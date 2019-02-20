@@ -291,19 +291,23 @@ void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> di
   createNode();
   tree_root = tree[0]; // Node with id 0 is assumed to be a default root node
 
-  std::unordered_map<int32_t, int32_t> nodesMap;
-  nodesMap.insert({0, 0});
+  std::unordered_map<std::string, int32_t> nodesMap;
+  nodesMap.insert({"0", 0});
 
   std::string line;
   while(std::getline(treefile, line)){
-    int32_t parent, child, parentId, childId;
-    std::string label;
+    if(!line.length()) continue;
+
+    int32_t parentId, childId;
+    std::string parent, child, label;
 
     std::istringstream lineISS(line);
     lineISS >> parent >> child >> label;
 
+    std::cout << parent << " " << child << " " << label << "\n";
+
     if(parent == child)
-      throw std::invalid_argument("Node " + std::to_string(child) + " can't have itself as a parent!");
+      throw std::invalid_argument("Node " + child + " can't have itself as a parent!");
 
     auto c = nodesMap.find(child);
     if(c != nodesMap.end()) childId = c->second;
@@ -313,7 +317,7 @@ void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> di
     }
     NodePLT *childN = tree[childId];
     if(childN->parent)
-      throw std::invalid_argument("Node " + std::to_string(child) + " occurs more than once in the tree structure file!");
+      throw std::invalid_argument("Node " + child + " occurs more than once in the tree structure file!");
 
     // Assign label to the node if present
     if(label.length()){
@@ -330,8 +334,8 @@ void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> di
     }
 
     // Set the new root if no parent
-    if(parent == -1){
-      tree_root = tree[child];
+    if(parent == "-1"){
+      tree_root = tree[childId];
       continue;
     }
 
