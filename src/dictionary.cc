@@ -616,4 +616,12 @@ void Dictionary::dump(std::ostream& out) const {
   }
 }
 
+std::vector<std::string> Dictionary::getWords(entry_type type) const {
+  std::vector<std::string> words;
+  for (auto& w : words_) {
+    if (w.type == type) words.push_back(w.word);
+  }
+  return words;
+}
+
 }

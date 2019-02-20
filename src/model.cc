@@ -234,7 +234,7 @@ real Model::getProb(Vector& hidden, int32_t target){
   if (lossLayer_ != nullptr){
     real p = lossLayer_->getLabelP(target, hidden, this);
     return p;
-  } else throw "Only lossLayers support getProb!";
+  } else throw  std::invalid_argument("Only lossLayers support getProb!");
 }
 
 real Model::getProb(const std::vector<int32_t>& input, const std::vector<real>& input_values, Vector& hidden, int32_t target){
@@ -243,7 +243,7 @@ real Model::getProb(const std::vector<int32_t>& input, const std::vector<real>& 
   if (lossLayer_ != nullptr){
     real p = lossLayer_->getLabelP(target, hidden, this);
     return p;
-  } else throw "Only lossLayers support getProb!";
+  } else throw  std::invalid_argument("Only lossLayers support getProb!");
 }
 
 void Model::dfs(int32_t k, real threshold, int32_t node, real score,

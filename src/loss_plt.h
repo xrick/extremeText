@@ -68,7 +68,7 @@ class PLT: public LossLayer{
 
   NodePLT *tree_root;
   std::vector<NodePLT*> tree; // pointers to tree nodes
-  std::unordered_map<int32_t, NodePLT*> tree_leaves; // leaves map (nodes with labels)
+  std::unordered_map<int32_t, NodePLT*> tree_labels; // labels map (nodes with labels)
 
   real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
   real predictNode(NodePLT *n, Vector& hidden, const Model *model_);

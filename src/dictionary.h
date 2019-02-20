@@ -122,6 +122,7 @@ class Dictionary {
     bool isPruned() { return pruneidx_size_ >= 0; }
     void dump(std::ostream&) const;
     void init();
+    std::vector<std::string> getWords(entry_type) const;
 };
 
 }

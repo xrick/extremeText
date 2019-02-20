@@ -83,7 +83,7 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
     }
 
     t = tree.size();
-    std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+    std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << ", arity: " << args_->arity << "\n";
 }
 
 void PLT::buildCompletePLTree(int32_t k_) {
@@ -108,7 +108,7 @@ void PLT::buildCompletePLTree(int32_t k_) {
     if(i >= ti){
       if(args_->randomTree) n->label = labels_order[i - ti];
       else n->label = i - ti;
-      tree_leaves.insert(std::make_pair(n->label, n));
+      tree_labels.insert(std::make_pair(n->label, n));
     }
 
     if(i > 0){
@@ -120,7 +120,7 @@ void PLT::buildCompletePLTree(int32_t k_) {
   tree_root = tree[0];
   tree_root->parent = nullptr;
 
-  std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << ", arity: " << args_->arity << "\n";
+  std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << ", arity: " << args_->arity << "\n";
 }
 
 
@@ -279,74 +279,109 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   }
 
   t = tree.size();
-  assert(k == tree_leaves.size());
-  std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+  assert(k == tree_labels.size());
+  std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << "\n";
 }
 
 void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> dict){
-    if(args_->verbose > 2)
-      std::cerr << "  Loading PLT structure from file: " << filename << " ...\n";
-    std::ifstream treefile(filename);
+  if(args_->verbose > 2)
+    std::cerr << "  Loading PLT structure from file: " << filename << " ...\n";
+  std::ifstream treefile(filename);
 
-    int32_t parent, child;
-    std::string line, label;
-    {
-      std::getline(treefile, line);
-      std::istringstream lineISS(line);
-      lineISS >> t >> k;
+  createNode();
+  tree_root = tree[0]; // Node with id 0 is assumed to be a default root node
+
+  std::unordered_map<int32_t, int32_t> nodesMap;
+  nodesMap.insert({0, 0});
+
+  std::string line;
+  while(std::getline(treefile, line)){
+    int32_t parent, child, parentId, childId;
+    std::string label;
+
+    std::istringstream lineISS(line);
+    lineISS >> parent >> child >> label;
+
+    if(parent == child)
+      throw std::invalid_argument("Node " + std::to_string(child) + " can't have itself as a parent!");
+
+    auto c = nodesMap.find(child);
+    if(c != nodesMap.end()) childId = c->second;
+    else{
+      createNode();
+      childId = nodesMap.insert(std::make_pair(child, nodesMap.size())).first->second;
     }
+    NodePLT *childN = tree[childId];
+    if(childN->parent)
+      throw std::invalid_argument("Node " + std::to_string(child) + " occurs more than once in the tree structure file!");
 
-    std::unordered_map<int32_t, int32_t> nodesMap;
-    for (int32_t i = 0; i < t; ++i) NodePLT *n = createNode();
-    nodesMap.insert({0, 0});
+    // Assign label to the node if present
+    if(label.length()){
+      dict->add(label, 0);
+      int32_t wid = dict->getId(label);
 
-    // Node with id 0 is assumed to be a root node
-    tree_root = tree[0];
-
-    while(std::getline(treefile, line)){
-      std::istringstream lineISS(line);
-      lineISS >> parent >> child >> label;
-
-      auto c = nodesMap.find(child);
-      if(c != nodesMap.end()) child = c->second;
-      else child = nodesMap.insert(std::make_pair(child, nodesMap.size())).first->second;
-
-      // Set the new root
-      if(parent == -1){
-        tree_root = tree[child];
-        continue;
-      }
-
-      auto p = nodesMap.find(parent);
-      if(p != nodesMap.end()) parent = p->second;
-      else parent = nodesMap.insert(std::make_pair(parent, nodesMap.size())).first->second;
-
-      NodePLT *parentN = tree[parent];
-      NodePLT *childN = tree[child];
-      parentN->children.push_back(childN);
-      childN->parent = parentN;
-
-      if(label.length()){
-        dict->add(label, 0);
-        int32_t wid = dict->getId(label);
-
-        if(wid >= 0 && dict->getType(wid) == entry_type::label){
-          int32_t label_id = wid - dict->nwords();
-          childN->label = label_id;
-          tree_leaves.insert(std::make_pair(childN->label, childN));
-        }
+      if(wid >= 0 && dict->getType(wid) == entry_type::label){
+        int32_t labelId = wid - dict->nwords();
+        childN->label = labelId;
+        if(tree_labels.count(labelId))
+          throw std::invalid_argument(label + " occurs more than once in the tree structure file!");
+        else tree_labels.insert(std::make_pair(childN->label, childN));
       }
     }
-    treefile.close();
 
-    if(args_->verbose > 2)
-      std::cerr << "    Nodes: " << tree.size() << ", labels: " << tree_leaves.size() << "\n";
-    assert(tree.size() == t);
-    assert(tree_leaves.size() == k);
+    // Set the new root if no parent
+    if(parent == -1){
+      tree_root = tree[child];
+      continue;
+    }
+
+    // Update parent
+    auto p = nodesMap.find(parent);
+    if(p != nodesMap.end()) parentId = p->second;
+    else{
+      createNode();
+      parentId = nodesMap.insert(std::make_pair(parent, nodesMap.size())).first->second;
+    }
+
+    NodePLT *parentN = tree[parentId];
+    parentN->children.push_back(childN);
+    childN->parent = parentN;
+  }
+  treefile.close();
+
+  // Validate tree structure
+  if(args_->verbose > 2)
+    std::cerr << "    Validating tree structure ...\n";
+
+  // Searching for cycles
+  for(const auto& l : tree_labels){
+    NodePLT* n = l.second;
+    std::unordered_set<NodePLT*> visited;
+    while(n->parent){
+      visited.insert(n);
+      n = n->parent;
+
+      if(visited.count(n))
+        throw std::invalid_argument("There is a cycle in the tree structure!");
+    }
+    if(n != tree_root)
+      throw std::invalid_argument("There is no path to the tree root from " + dict->getWord(l.first + dict->nwords()) + "!");
   }
 
-real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
+  // Checking if all labels are present in the tree structure
+  for(const auto& l : dict->getWords(entry_type::label)){
+    int32_t label_id = dict->getId(l) - dict->nwords();
+    if(!tree_labels.count(label_id))
+      throw std::invalid_argument(l + " doesn't occur in the tree structure file!");
+  }
 
+  if(args_->verbose > 2)
+    std::cerr << "    Nodes: " << tree.size() << ", labels: " << tree_labels.size() << "\n";
+  t = tree.size();
+  k = tree_labels.size();
+}
+
+real PLT::learnNode(NodePLT *n, real label, real lr, real l2, Model *model_){
     if(n->label < 0) ++n_in_vis_count;
     ++n_vis_count;
     ++n->n_updates;
@@ -370,7 +405,7 @@ NodePLT* PLT::createNode(NodePLT *parent, int32_t label){
     //n->minWeight = 0;
 
     tree.push_back(n);
-    if(label >= 0) tree_leaves[n->label] = n;
+    if(label >= 0) tree_labels[n->label] = n;
     if(parent != nullptr) parent->children.push_back(n);
     return n;
 }
@@ -387,7 +422,9 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     // PLT's node selection
     if (labels.size() > 0) {
         for (uint32_t i = 0; i < labels.size(); ++i) {
-            NodePLT *n = tree_leaves[labels[i]];
+            const auto& ni = tree_labels.find(labels[i]);
+            if(ni == tree_labels.end()) throw std::runtime_error("Missing label in the tree structure!");
+            NodePLT *n = ni->second;
             n_positive.insert(n);
             while (n->parent) {
                 n = n->parent;
@@ -505,7 +542,7 @@ void PLT::findKBest(int32_t top_k, real threshold, std::vector<std::pair<real, i
 real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
 
     std::vector<NodePLT*> path;
-    NodePLT *n = tree_leaves[label];
+    NodePLT *n = tree_labels[label];
 
     if(!args_->probNorm){
         real p = predictNode(n, hidden, model_);
@@ -628,7 +665,7 @@ void PLT::load(std::istream& in){
         in.read((char*) &n->n_positive_updates, sizeof(n->n_positive_updates));
 
         tree[i] = n;
-        if (n->label >= 0) tree_leaves[n->label] = n;
+        if (n->label >= 0) tree_labels[n->label] = n;
     }
 
     uint32_t root_n;
@@ -647,7 +684,7 @@ void PLT::load(std::istream& in){
     }
 
     if(args_->verbose > 2)
-        std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_leaves.size() << "\n";
+        std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << "\n";
 }
 
 }
