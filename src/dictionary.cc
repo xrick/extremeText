@@ -60,6 +60,8 @@ int32_t Dictionary::add(const std::string& w, int32_t c) {
     e.type = getType(w);
     words_.push_back(e);
     word2int_[h] = size_++;
+    if (e.type == entry_type::word) nwords_++;
+    else if (e.type == entry_type::label) nlabels_++;
   } else {
     words_[word2int_[h]].count += c;
   }
