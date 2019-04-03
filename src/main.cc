@@ -25,7 +25,7 @@ void printUsage() {
     << "  test                    evaluate a supervised classifier\n"
     << "  predict                 predict most likely labels\n"
     << "  predict-prob            predict most likely labels with probabilities\n"
-    << "  get-prob                predict probabilities for given labels"
+    << "  get-prob                predict probabilities for given labels\n"
     << "  skipgram                train a skipgram model\n"
     << "  cbow                    train a cbow model\n"
     << "  print-word-vectors      print word vectors given a trained model\n"
