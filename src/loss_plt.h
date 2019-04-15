@@ -23,11 +23,11 @@ namespace fasttext {
 
 class Model;
 
-struct NodePLT{
+struct TreeNode{
   uint32_t index; //id of the base predictor
   int32_t label;
-  NodePLT* parent; // pointer to the parent node
-  std::vector<NodePLT*> children; // pointers to the children nodes
+  TreeNode* parent; // pointer to the parent node
+  std::vector<TreeNode*> children; // pointers to the children nodes
 
   // training
   uint32_t n_updates;
@@ -35,7 +35,7 @@ struct NodePLT{
 };
 
 struct NodeFreq{
-  NodePLT* node;
+  TreeNode* node;
   int64_t freq; // frequency
 
   bool operator<(const NodeFreq& r) const { return freq < r.freq; }
@@ -43,7 +43,7 @@ struct NodeFreq{
 };
 
 struct NodeProb{
-  NodePLT* node;
+  TreeNode* node;
   real prob; // probability
 
   bool operator<(const NodeProb& r) const { return prob < r.prob; }
@@ -53,7 +53,7 @@ struct NodeProb{
 // For K-Means based trees
 
 struct NodePartition{
-  NodePLT* node;
+  TreeNode* node;
   std::vector<Assignation>* partition;
 };
 
@@ -66,19 +66,19 @@ class PLT: public LossLayer{
   uint64_t y_count;
   uint64_t x_count;
 
-  NodePLT *tree_root;
-  std::vector<NodePLT*> tree; // pointers to tree nodes
-  std::unordered_map<int32_t, NodePLT*> tree_labels; // labels map (nodes with labels)
+  TreeNode *tree_root;
+  std::vector<TreeNode*> tree; // pointers to tree nodes
+  std::unordered_map<int32_t, TreeNode*> tree_labels; // labels map (nodes with labels)
 
-  real learnNode(NodePLT *n, real label, real lr, real l2, Model *model_);
-  real predictNode(NodePLT *n, Vector& hidden, const Model *model_);
+  real learnNode(TreeNode *n, real label, real lr, real l2, Model *model_);
+  real predictNode(TreeNode *n, Vector& hidden, const Model *model_);
 
   void buildCompletePLTree(int32_t);
   void buildHuffmanPLTree(const std::vector<int64_t>&);
   void buildKMeansPLTree(std::shared_ptr<Args>, std::shared_ptr<Dictionary>);
   void loadTreeStructure(std::string filename, std::shared_ptr<Dictionary>);
 
-  NodePLT* createNode(NodePLT *parent = nullptr, int32_t label = -1);
+  TreeNode* createNode(TreeNode *parent = nullptr, int32_t label = -1);
 
  public:
   PLT(std::shared_ptr<Args> args);

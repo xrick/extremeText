@@ -8,12 +8,15 @@
 #include "loss_plt.h"
 #include "loss_sigmoid.h"
 #include "loss_ensemble.h"
+#include "loss_brt.h"
 
 namespace fasttext {
 
 std::shared_ptr<LossLayer> lossLayerFactory(std::shared_ptr<Args> args, loss_name loss){
     if (loss == loss_name::plt)
         return std::static_pointer_cast<LossLayer>(std::make_shared<PLT>(args));
+    if (loss == loss_name::brt)
+        return std::static_pointer_cast<LossLayer>(std::make_shared<BRT>(args));
     if (loss == loss_name::sigmoid)
         return std::static_pointer_cast<LossLayer>(std::make_shared<Sigmoid>(args));
 

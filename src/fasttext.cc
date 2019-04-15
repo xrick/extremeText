@@ -510,7 +510,7 @@ void FastText::testThread(
       }
       nexamples++;
       nlabels += labels.size();
-      npredictions += modelPredictions.size();
+      npredictions += k; //modelPredictions.size();
     }
   }
 
@@ -554,7 +554,7 @@ std::tuple<uint64_t, double, double, double> FastText::test(
       }
       nexamples++;
       nlabels += labels.size();
-      npredictions += modelPredictions.size();
+      npredictions += k; // modelPredictions.size();
     }
   }
   return std::tuple<uint64_t, double, double, double>(

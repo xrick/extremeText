@@ -25,6 +25,7 @@ set(HEADER_FILES
     src/kmeans.h
     src/loss_ensemble.h
     src/loss_plt.h
+    src/loss_brt.cc
     src/loss_sigmoid.h
     src/losslayer.h
     src/matrix.h
@@ -44,6 +45,7 @@ set(SOURCE_FILES
     src/kmeans.cc
     src/loss_ensemble.cc
     src/loss_plt.cc
+    src/loss_brt.cc
     src/loss_sigmoid.cc
     src/losslayer.cc
     src/main.cc

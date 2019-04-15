@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 by Marek Wydmuch, Róbert Busa-Fekete, Krzysztof Dembczyński
+ * Copyright (c) 2018 by Marek Wydmuch
  * All rights reserved.
  */
  
@@ -17,14 +17,14 @@
 #include <iomanip>
 #include <array>
 
-#include "loss_plt.h"
+#include "loss_brt.h"
 #include "model.h"
 #include "threads.h"
 #include "utils.h"
 
 namespace fasttext {
 
-PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
+BRT::BRT(std::shared_ptr<Args> args) : LossLayer(args){
     multilabel = true;
 
     // Stats
@@ -34,15 +34,15 @@ PLT::PLT(std::shared_ptr<Args> args) : LossLayer(args){
     x_count = 0;
 }
 
-PLT::~PLT() {
+BRT::~BRT() {
     for(size_t i = 0; i < tree.size(); ++i){
         delete tree[i];
     }
 }
 
-void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
+void BRT::buildHuffmanBRTree(const std::vector<int64_t>& freq){
     if(args_->verbose > 2)
-        std::cerr << "  Building PLT with Huffman tree ...\n";
+        std::cerr << "  Building BRT with Huffman tree ...\n";
 
     k = freq.size();
     t = 2 * k - 1; // size of the tree
@@ -86,9 +86,9 @@ void PLT::buildHuffmanPLTree(const std::vector<int64_t>& freq){
     std::cerr << "    Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << ", arity: " << args_->arity << "\n";
 }
 
-void PLT::buildCompletePLTree(int32_t k_) {
+void BRT::buildCompleteBRTree(int32_t k_) {
   if(args_->verbose > 2)
-    std::cerr << "  Building PLT with complete tree ...\n";
+    std::cerr << "  Building BRT with complete tree ...\n";
 
   // Build complete tree
   k = k_;
@@ -124,9 +124,9 @@ void PLT::buildCompletePLTree(int32_t k_) {
 }
 
 
-#define MUTEXES 2048
-void featureMatrixThread(int threadId, std::shared_ptr<Dictionary> dict, std::shared_ptr<Args> args,
-        std::vector<std::unordered_map<int32_t, real>>& tmpLabelsFeatures, std::array<std::mutex, MUTEXES>& mutexes){
+#define MUTEXES_BRT 2048
+void featureMatrixThreadBRT(int threadId, std::shared_ptr<Dictionary> dict, std::shared_ptr<Args> args,
+        std::vector<std::unordered_map<int32_t, real>>& tmpLabelsFeatures, std::array<std::mutex, MUTEXES_BRT>& mutexes){
 
     std::ifstream ifs(args->input);
     std::vector<int32_t> line, labels;
@@ -166,12 +166,12 @@ void featureMatrixThread(int threadId, std::shared_ptr<Dictionary> dict, std::sh
     ifs.close();
 }
   
-NodePartition nodeKMeansThread(NodePartition nPart, SRMatrix<Feature>& labelsFeatures, std::shared_ptr<Args> args, int seed){
+NodePartition nodeKMeansThreadBRT(NodePartition nPart, SRMatrix<Feature>& labelsFeatures, std::shared_ptr<Args> args, int seed){
   kMeans(nPart.partition, labelsFeatures, args->arity, args->kMeansEps, args->kMeansBalanced, seed);
   return nPart;
 }
   
-void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
+void BRT::buildKMeansBRTree(std::shared_ptr<Args> args, std::shared_ptr<Dictionary> dict){
 
   // Build label's feature matrix
   tree_root = createNode();
@@ -184,10 +184,10 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
     std::vector<std::unordered_map<int32_t, real>> tmpLabelsFeatures(k);
 
     if(args->thread > 1){
-      std::array<std::mutex, MUTEXES> mutexes;
+      std::array<std::mutex, MUTEXES_BRT> mutexes;
       ThreadSet tSet;
       for(int t = 0; t < args_->thread; ++t)
-        tSet.add(featureMatrixThread, t, dict, args, std::ref(tmpLabelsFeatures), std::ref(mutexes));
+        tSet.add(featureMatrixThreadBRT, t, dict, args, std::ref(tmpLabelsFeatures), std::ref(mutexes));
       tSet.joinAll();
     } else {
       std::ifstream ifs(args->input);
@@ -241,7 +241,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   std::vector<std::future<NodePartition>> results;
 
   NodePartition rootPart = {tree_root, partition};
-  results.emplace_back(tPool.enqueue(nodeKMeansThread, rootPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
+  results.emplace_back(tPool.enqueue(nodeKMeansThreadBRT, rootPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
 
   std::cerr << "Starting hierarchical K-Means clustering in " << args->thread << " threads ...\n";
 
@@ -271,7 +271,7 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
         delete partitions[i];
       } else {
         NodePartition childPart = {n, partitions[i]};
-        results.emplace_back(tPool.enqueue(nodeKMeansThread, childPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
+        results.emplace_back(tPool.enqueue(nodeKMeansThreadBRT, childPart, std::ref(labelsFeatures), args, kMeansSeeder(rng)));
       }
     }
 
@@ -283,9 +283,9 @@ void PLT::buildKMeansPLTree(std::shared_ptr<Args> args, std::shared_ptr<Dictiona
   std::cerr << "  Nodes: " << tree.size() << ", leaves: " << tree_labels.size() << "\n";
 }
 
-void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> dict){
+void BRT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> dict){
   if(args_->verbose > 2)
-    std::cerr << "  Loading PLT structure from file: " << filename << " ...\n";
+    std::cerr << "  Loading BRT structure from file: " << filename << " ...\n";
   std::ifstream treefile(filename);
 
   createNode();
@@ -384,7 +384,7 @@ void PLT::loadTreeStructure(std::string filename, std::shared_ptr<Dictionary> di
   k = tree_labels.size();
 }
 
-real PLT::learnNode(TreeNode *n, real label, real lr, real l2, Model *model_){
+real BRT::learnNode(TreeNode *n, real label, real lr, real l2, Model *model_){
     if(n->label < 0) ++n_in_vis_count;
     ++n_vis_count;
     ++n->n_updates;
@@ -392,13 +392,13 @@ real PLT::learnNode(TreeNode *n, real label, real lr, real l2, Model *model_){
     return binaryLogistic(n->index, label, lr, l2, model_);
 }
 
-real PLT::predictNode(TreeNode *n, Vector& hidden, const Model *model_){
+real BRT::predictNode(TreeNode *n, Vector& hidden, const Model *model_, real threshold){
     if(n->n_updates == 0 || n->n_positive_updates == 0) return 0;
     else if(n->n_positive_updates == n->n_updates) return 1;
-    else return model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->index));
+    else return model_->sigmoid(model_->wo_->dotRow(hidden, shift + n->index)) >= threshold ? 1 : 0;
 }
 
-TreeNode* PLT::createNode(TreeNode *parent, int32_t label){
+TreeNode* BRT::createNode(TreeNode *parent, int32_t label){
     TreeNode *n = new TreeNode();
     n->index = tree.size();
     n->label = label;
@@ -417,24 +417,36 @@ TreeNode* PLT::createNode(TreeNode *parent, int32_t label){
 // public
 //----------------------------------------------------------------------------------------------------------------------
 
-real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
+real BRT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 
-    std::unordered_set<TreeNode*> n_positive; // positive nodes
-    std::unordered_set<TreeNode*> n_negative; // negative nodes
+    std::unordered_map<TreeNode*, real> n_positive; // positive nodes
+    std::unordered_map<TreeNode*, real> n_negative; // negative nodes
 
-    // PLT's node selection
+    // BRT's node selection
     if (labels.size() > 0) {
+        real label_w = 1.0; // / labels.size();
         for (uint32_t i = 0; i < labels.size(); ++i) {
             const auto& ni = tree_labels.find(labels[i]);
             if(ni == tree_labels.end()) throw std::runtime_error("Missing label in the tree structure!");
             TreeNode *n = ni->second;
-            n_positive.insert(n);
-            while (n->parent) {
+            do{
+                auto n_visited = n_positive.find(n);
+                if(n_visited != n_positive.end()) n_visited->second += label_w;
+                else n_positive.insert({n, label_w});
                 n = n->parent;
-                n_positive.insert(n);
-            }
+            } while (n != nullptr);
         }
+    }
+    else n_negative.insert({tree_root, 1});
 
+    if(!args_->neg){
+        // All nodes selection
+        for(auto n : tree){
+            if (!n_positive.count(n)) n_negative.insert({n, 1});
+        }
+    }
+    else {
+        // PLT's node selection
         std::queue<TreeNode*> n_queue; // nodes queue
         n_queue.push(tree_root); // push root
 
@@ -445,30 +457,39 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
             if (n->label < 0) {
                 for(auto child : n->children) {
                     if (n_positive.count(child)) n_queue.push(child);
-                    else n_negative.insert(child);
+                    //else n_negative.insert({child, n_positive[n]});
+                    else n_negative.insert({child, 1});
                 }
             }
         }
-    }
-    else n_negative.insert(tree_root);
 
-    // PLT's negative mining
-    if(args_->neg > 0){
-        int n_sampled = 0, n_labels = 0;
-        std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
-        n_queue.push({tree_root, predictNode(tree_root, model_->hidden_, model_)});
-        while(n_sampled < args_->neg) {
-            //while(n_labels < labels.size()) { // alternative negative sampling
-            //for(int i = 0; i < args_->neg; ++i) { // alternative negative sampling
-            TreeNode *n = getNextBest(n_queue, model_->hidden_, model_).node;
-            if(!n_positive.count(n)){
-                ++n_sampled;
-                while (n->parent) {
-                    if (!n_positive.count(n)) n_negative.insert(n);
-                    else break;
-                    n = n->parent;
+        // Negative sampling node selection
+        std::uniform_int_distribution<int> negativeSampler(0, k - 1);
+        for(uint32_t i = 0; i < args_->neg; ++i){
+            uint32_t neg_l;
+            bool in_labels;
+            do{
+                in_labels = false;
+                neg_l = negativeSampler(rng);
+
+                const auto& ni = tree_labels.find(neg_l);
+                if(ni == tree_labels.end()) continue;
+
+                for (uint32_t i = 0; i < labels.size(); ++i) {
+                    if(neg_l == labels[i]){
+                        in_labels = true;
+                        break;
+                    }
                 }
-            } else ++n_labels;
+            } while(in_labels);
+
+            const auto& ni = tree_labels.find(neg_l);
+            if(ni == tree_labels.end()) throw std::runtime_error("Missing label in the tree structure!");
+            TreeNode *n = ni->second;
+            do{
+                if (!n_positive.count(n)) n_negative.insert({n, 1});
+                n = n->parent;
+            } while (n != nullptr);
         }
     }
 
@@ -477,12 +498,12 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
 
     real label = 1.0;
     for (auto &n : n_positive){
-        loss += learnNode(n, label, lr, l2, model_);
+        loss += learnNode(n.first, label, n.second * lr, l2, model_);
     }
 
     label = 0.0;
     for (auto &n : n_negative){
-        loss += learnNode(n, label, lr, l2, model_);
+        loss += learnNode(n.first, label, n.second * lr, l2, model_);
     }
 
     y_count += labels.size();
@@ -491,106 +512,42 @@ real PLT::loss(const std::vector<int32_t>& labels, real lr, Model *model_) {
     return loss;
 }
 
-NodeProb PLT::getNextBest(std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>>& n_queue,
-                           Vector& hidden, const Model *model_){
+NodeProb BRT::getNext(std::queue<NodeProb>& n_queue, Vector& hidden, const Model *model_, real threshold){
 
-    // while (!n_queue.empty()) {
     while (true) {
-        NodeProb np = n_queue.top(); // current node
+        NodeProb np = n_queue.front(); // current node
         n_queue.pop();
 
-        if(!args_->probNorm) {
-            if (np.node->children.size()){
-                for (auto& child : np.node->children)
-                    n_queue.push({child, np.prob * predictNode(child, hidden, model_)});
+        if (np.node->children.size()){
+            for (auto& child : np.node->children){
+                real child_pred = predictNode(child, hidden, model_, threshold);
+                if(child_pred) n_queue.push({child, 1});
             }
-            if (np.node->label >= 0) return np;
-        } else {
-            if (np.node->children.size()){
-                real sumOfP = 0.0;
-                std::vector<NodeProb> normChildren;
-                for (auto& child : np.node->children) {
-                    real p = predictNode(child, hidden, model_);
-                    normChildren.push_back({child, p});
-                    sumOfP += p;
-                }
-                if (sumOfP < 1.0){ //&& (sumOfP > 10e-6)) {
-                    for (auto& child : normChildren) {
-                        child.prob = child.prob / sumOfP;
-                    }
-                }
-                for (auto& child : normChildren){
-                    child.prob *= np.prob;
-                    n_queue.push(child);
-                }
-            }
-            if (np.node->label >= 0) return np;
         }
 
+        if(np.node->label >= 0) return np;
         if(n_queue.empty()) return np;
     }
 }
 
-void PLT::findKBest(int32_t top_k, real threshold, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
-    std::priority_queue<NodeProb, std::vector<NodeProb>, std::less<NodeProb>> n_queue;
-    n_queue.push({tree_root, predictNode(tree_root, hidden, model_)});
+void BRT::findKBest(int32_t top_k, real threshold, std::vector<std::pair<real, int32_t>>& heap, Vector& hidden, const Model *model_) {
+    std::queue<NodeProb> n_queue;
 
-    for(int i = 0; i < top_k; ++i) {
-        NodeProb np = getNextBest(n_queue, hidden, model_);
-        if(np.prob < threshold) break;
-        heap.push_back({np.prob, np.node->label});
+    real root_pred = predictNode(tree_root, hidden, model_, threshold);
+    if(root_pred){
+        n_queue.push({tree_root, 1});
+        for(int i = 0; i < top_k; ++i) {
+            NodeProb np = getNext(n_queue, hidden, model_, threshold);
+            heap.push_back({1, np.node->label});
+        }
     }
 }
 
-real PLT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
-
-    std::vector<TreeNode*> path;
-    TreeNode *n = tree_labels[label];
-
-    if(!args_->probNorm){
-        real p = predictNode(n, hidden, model_);
-        while(n->parent) {
-            n = n->parent;
-            p = p * predictNode(n, hidden, model_);
-        }
-        assert(n == tree_root);
-        return p;
-
-    } else {
-        path.push_back(n);
-        while (n->parent) {
-            n = n->parent;
-            path.push_back(n);
-        }
-
-        assert(tree_root == n);
-        assert(tree_root == path.back());
-
-        real p = predictNode(tree_root, hidden, model_);
-        for (auto n = path.rbegin(); n != path.rend(); ++n) {
-            if ((*n)->label < 0) {
-                //TODO: rewrite this part
-                /*
-                for (auto child : (*n)->children) {
-                    normChildren.push_back({child, })
-                    child->p = cp * predictNode(child, hidden, model_);
-                    sumOfP += child->p;
-                }
-                if ((sumOfP < cp) //&& (sumOfP > 10e-6)) {
-                    for (auto child : (*n)->children) {
-                        child->p = (child->p * cp) / sumOfP;
-                    }
-                }
-                float sumOfP = 0.0f;
-                 */
-            }
-        }
-
-        return p;
-    }
+real BRT::getLabelP(int32_t label, Vector &hidden, const Model *model_){
+    return 0.0;
 }
 
-void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
+void BRT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
   rng.seed(seed);
 
   if(args_->treeStructure != ""){
@@ -600,19 +557,19 @@ void PLT::setup(std::shared_ptr<Dictionary> dict, uint32_t seed){
   }
 
   if (args_->treeType == tree_type_name::complete)
-    buildCompletePLTree(dict->nlabels());
+    buildCompleteBRTree(dict->nlabels());
   else if (args_->treeType == tree_type_name::huffman)
-    buildHuffmanPLTree(dict->getCounts(entry_type::label));
+    buildHuffmanBRTree(dict->getCounts(entry_type::label));
   else if (args_->treeType == tree_type_name::kmeans)
-    buildKMeansPLTree(args_, dict);
+    buildKMeansBRTree(args_, dict);
 }
 
-int32_t PLT::getSize(){
+int32_t BRT::getSize(){
   assert(t == tree.size());
   return tree.size();
 }
 
-void PLT::printInfo(){
+void BRT::printInfo(){
   /*
   std::cerr << "  Avg n vis: " << static_cast<float>(n_vis_count) / x_count << "\n";
   std::cerr << "  Avg n in vis: " << static_cast<float>(n_in_vis_count) / x_count << "\n";
@@ -620,9 +577,9 @@ void PLT::printInfo(){
   */
 }
 
-void PLT::save(std::ostream& out){
+void BRT::save(std::ostream& out){
     if(args_->verbose > 2)
-        std::cerr << "Saving PLT output ...\n";
+        std::cerr << "Saving BRT output ...\n";
 
     out.write((char*) &k, sizeof(int32_t));
     out.write((char*) &shift, sizeof(shift));
@@ -651,9 +608,9 @@ void PLT::save(std::ostream& out){
     }
 }
 
-void PLT::load(std::istream& in){
+void BRT::load(std::istream& in){
     if(args_->verbose > 2)
-        std::cerr << "Loading PLT output ...\n";
+        std::cerr << "Loading BRT output ...\n";
 
     in.read((char*) &k, sizeof(int32_t));
     in.read((char*) &shift, sizeof(shift));

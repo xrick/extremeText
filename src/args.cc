@@ -198,6 +198,8 @@ void Args::parseArgs(const std::vector<std::string>& args) {
           loss = loss_name::plt;
         } else if (args.at(ai + 1) == "sigmoid") {
           loss = loss_name::sigmoid;
+        } else if (args.at(ai + 1) == "brt") {
+          loss = loss_name::brt;
         } else {
           std::cerr << "Unknown loss: " << args.at(ai + 1) << std::endl;
           printHelp();
